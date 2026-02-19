@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earnings Explorer - Q4 & FY 2025</title>
+<meta name="description" content="Walk through a vibrant world and discover Q4 & FY 2025 earnings from SoFi, Shopify, Remitly, and Lemonade. An interactive earnings experience.">
+<meta property="og:title" content="Earnings Explorer - Q4 & FY 2025">
+<meta property="og:description" content="Walk through a vibrant world and discover the latest earnings from SoFi, Shopify, Remitly, and Lemonade. Talk to zombie retail investors and famous investors!">
+<meta property="og:image" content="https://harryh-tech-2.github.io/earnings-explorer/social-preview.png.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://harryh-tech-2.github.io/earnings-explorer/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Earnings Explorer - Q4 & FY 2025">
+<meta name="twitter:description" content="An interactive game to explore Q4 & FY 2025 earnings from SoFi, Shopify, Remitly, and Lemonade.">
+<meta name="twitter:image" content="https://harryh-tech-2.github.io/earnings-explorer/social-preview.png.svg">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
+  canvas { display: block; }
+
+  #hud {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(10,10,30,0.85); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 8px 24px; color: #ccc; font-size: 13px;
+    backdrop-filter: blur(10px); z-index: 10; text-align: center;
+    pointer-events: none;
+  }
+  #hud .title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+  #hud .sub { font-size: 11px; color: #888; margin-top: 2px; }
+
+  #minimap {
+    position: fixed; bottom: 16px; right: 16px;
+    width: 180px; height: 120px;
+    background: rgba(10,10,30,0.8); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; z-index: 10; overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+
+  #zone-label {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(10,10,30,0.85); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; padding: 6px 18px; color: #fff; font-size: 14px;
+    backdrop-filter: blur(10px); z-index: 10; pointer-events: none;
+    transition: opacity 0.3s; opacity: 0;
+  }
+  #zone-label.visible { opacity: 1; }
+
+  #data-panel {
+    position: fixed; top: 50%; right: 20px; transform: translateY(-50%) translateX(120%);
+    width: 420px; max-height: 80vh; overflow-y: auto;
+    background: rgba(10,10,30,0.92); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px; padding: 28px; z-index: 20;
+    backdrop-filter: blur(20px); transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+    scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent;
+  }
+  #data-panel.visible { transform: translateY(-50%) translateX(0); }
+  #data-panel h2 { font-size: 22px; margin-bottom: 4px; }
+  #data-panel .subtitle { font-size: 12px; color: #888; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1.5px; }
+  #data-panel .metric-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  #data-panel .metric-label { color: #aaa; font-size: 13px; }
+  #data-panel .metric-value { color: #fff; font-size: 15px; font-weight: 600; }
+  #data-panel .metric-change { font-size: 12px; margin-left: 8px; }
+  .change-positive { color: #4ade80; }
+  .change-negative { color: #f87171; }
+  #data-panel .highlight {
+    margin-top: 14px; padding: 12px; border-radius: 8px;
+    font-size: 13px; line-height: 1.5; color: #ddd;
+  }
+  #data-panel .prompt { font-size: 11px; color: #666; margin-top: 14px; text-align: center; }
+
+  #instructions {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(10,10,30,0.95); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 20px; padding: 48px; z-index: 100; text-align: center;
+    backdrop-filter: blur(20px); color: #fff; max-width: 520px;
+    animation: fadeIn 0.5s;
+  }
+  #instructions h1 { font-size: 32px; margin-bottom: 8px; background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6, #fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  #instructions .version { font-size: 12px; color: #666; margin-bottom: 24px; }
+  #instructions p { font-size: 14px; color: #aaa; line-height: 1.7; margin-bottom: 16px; }
+  #instructions .keys { display: flex; gap: 8px; justify-content: center; margin: 24px 0; }
+  #instructions .key {
+    width: 44px; height: 44px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; color: #fff;
+  }
+  #instructions .start-text { color: #4ade80; font-size: 13px; margin-top: 20px; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -48%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
+  #discovered {
+    position: fixed; top: 16px; right: 16px;
+    background: rgba(10,10,30,0.85); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; padding: 8px 14px; color: #aaa; font-size: 12px;
+    backdrop-filter: blur(10px); z-index: 10; pointer-events: none;
+  }
+  #discovered span { color: #4ade80; font-weight: 700; }
+
+  #npc-dialogue {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) translateY(80px);
+    background: rgba(10,10,30,0.92); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px; padding: 20px 28px; z-index: 15;
+    backdrop-filter: blur(20px); color: #fff; max-width: 380px;
+    text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s, transform 0.3s;
+  }
+  #npc-dialogue.visible {
+    opacity: 1; transform: translate(-50%, -50%) translateY(0);
+  }
+  #npc-dialogue .npc-name {
+    font-size: 16px; font-weight: 700; margin-bottom: 6px;
+  }
+  #npc-dialogue .npc-quote {
+    font-size: 13px; color: #ccc; line-height: 1.6; font-style: italic;
+  }
+  #npc-dialogue .npc-label {
+    font-size: 10px; color: #666; margin-top: 8px; text-transform: uppercase; letter-spacing: 1.5px;
+  }
+
+  #hub-prompt {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: rgba(10,10,30,0.85); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; padding: 6px 16px; color: #fff; font-size: 12px;
+    backdrop-filter: blur(10px); z-index: 10; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  #hub-prompt.visible { opacity: 1; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="title">EARNINGS EXPLORER</div>
+  <div class="sub">Q4 2025 & FY 2025 Earnings</div>
+</div>
+
+<div id="discovered">Discovered: <span id="disc-count">0</span> / <span id="disc-total">0</span></div>
+<div id="zone-label"></div>
+<div id="data-panel"></div>
+<div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
+<div id="npc-dialogue"><div class="npc-name"></div><div class="npc-quote"></div><div class="npc-label"></div></div>
+<div id="hub-prompt">Press E for Company Overview</div>
+
+<div id="instructions">
+  <h1>Earnings Explorer</h1>
+  <div class="version">Q4 2025 & Full Year 2025</div>
+  <p>Walk through a vibrant world and discover the latest earnings from <strong>SoFi</strong>, <strong>Shopify</strong>, <strong>Remitly</strong>, and <strong>Lemonade</strong>.</p>
+  <div class="keys">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div class="key">W</div>
+      <div style="display:flex;gap:4px;">
+        <div class="key">A</div>
+        <div class="key">S</div>
+        <div class="key">D</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:flex-end;">
+      <div class="key" style="width:80px;font-size:11px;">SPACE</div>
+      <div style="font-size:10px;color:#888;">Jump</div>
+    </div>
+  </div>
+  <p>Walk near <strong style="color:#fbbf24">glowing beacons</strong> to reveal data. Approach buildings for company overviews. Talk to NPCs!</p>
+  <div class="start-text">Press any WASD key to begin</div>
+</div>
+
+<script>
+// ===== CANVAS SETUP =====
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const mmCanvas = document.getElementById('minimap-canvas');
+const mmCtx = mmCanvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== CONSTANTS =====
+const WORLD_W = 3600;
+const WORLD_H = 2400;
+const TILE = 48;
+
+// ===== INPUT =====
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (['w','a','s','d'].includes(e.key.toLowerCase())) {
+    const inst = document.getElementById('instructions');
+    if (inst) inst.style.display = 'none';
+  }
+  if (e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    if (!player.isJumping) {
+      player.isJumping = true;
+      player.jumpVel = -9;
+    }
+  }
+  if (e.key.toLowerCase() === 'e') {
+    keys['_ePressed'] = true;
+  }
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+// ===== COMPANY DATA =====
+const companies = {
+  sofi: {
+    name: 'SoFi Technologies',
+    ticker: 'SOFI',
+    color: '#6366f1',
+    colorLight: '#818cf8',
+    colorDark: '#3730a3',
+    colorBg: 'rgba(99,102,241,0.12)',
+    x: WORLD_W / 2, y: WORLD_H * 0.78,
+    summary: 'SoFi delivered a landmark Q4 with its first-ever $1B revenue quarter. Full-year revenue hit $3.6B (+38%) with GAAP net income of $481M. Record member growth of 1M in Q4 brought total members to 13.7M. The lending platform generated $10.5B in originations while deposits surged to $37.5B. Adjusted EBITDA reached $1.1B (+58%), demonstrating powerful operating leverage across financial services, lending, and tech platform segments.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$1.013B', change: '+37%', positive: true },
+          { label: 'FY 2025 Revenue', value: '$3.6B', change: '+38%', positive: true },
+          { label: 'Fee-Based Revenue (Q4)', value: '$443.3M', change: '+53%', positive: true },
+          { label: 'Financial Services Rev (Q4)', value: '$456.7M', change: '+78%', positive: true },
+        ],
+        highlight: 'First-ever $1 billion revenue quarter - a landmark achievement for SoFi.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 GAAP Net Income', value: '$173.5M', change: '~17% margin', positive: true },
+          { label: 'FY GAAP Net Income', value: '$481M', change: '13% margin', positive: true },
+          { label: 'Q4 GAAP EPS', value: '$0.13', change: 'Beat est. $0.11', positive: true },
+          { label: 'FY Adjusted EBITDA', value: '$1.1B', change: '+58%', positive: true },
+        ],
+        highlight: 'Q4 EPS of $0.13 beat consensus of $0.11 by 18%. Full-year EBITDA hit $1.1B.'
+      },
+      {
+        title: 'Members & Products',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Total Members', value: '13.7M', change: '+35%', positive: true },
+          { label: 'New Members (Q4)', value: '1.0M', change: 'Record', positive: true },
+          { label: 'Total Products', value: '20M+', change: '+37%', positive: true },
+          { label: 'New Products (Q4)', value: '1.6M', change: 'Record', positive: true },
+        ],
+        highlight: 'Record 1 million new members in a single quarter, bringing total to 13.7 million.'
+      },
+      {
+        title: 'Lending & Deposits',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Total Originations (Q4)', value: '$10.5B', change: '+46%', positive: true },
+          { label: 'Personal Loans (Q4)', value: '$7.5B', change: '+43%', positive: true },
+          { label: 'Home Loans (Q4)', value: '$1.1B+', change: '~2x YoY', positive: true },
+          { label: 'Total Deposits', value: '$37.5B', change: '+$4.6B in Q4', positive: true },
+        ],
+        highlight: 'Home loans nearly doubled YoY. Total deposits reached $37.5B, fueling lower-cost funding.'
+      }
+    ]
+  },
+  shopify: {
+    name: 'Shopify',
+    ticker: 'SHOP',
+    color: '#22c55e',
+    colorLight: '#4ade80',
+    colorDark: '#15803d',
+    colorBg: 'rgba(34,197,94,0.12)',
+    x: WORLD_W / 2, y: WORLD_H * 0.22,
+    summary: 'Shopify crushed Q4 with $3.67B revenue (+31%) and FY revenue of $11.56B (+30%), actually accelerating from FY 2024. GAAP EPS of $0.57 beat estimates by 30%. GMV hit $123.8B in Q4, with B2B GMV nearly doubling. The company generated $2B in free cash flow for the year at ~17% margins - 10 consecutive quarters of double-digit FCF margins. Shopify now commands over 14% of the US e-commerce market and authorized a $2B share buyback.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$3.67B', change: '+31%', positive: true },
+          { label: 'FY 2025 Revenue', value: '$11.56B', change: '+30%', positive: true },
+          { label: 'Subscription Revenue (Q4)', value: '$777M', change: '+17%', positive: true },
+          { label: 'Merchant Revenue (Q4)', value: '~$2.89B', change: '+35%', positive: true },
+        ],
+        highlight: 'FY 2025 growth of 30% actually accelerated vs. FY 2024, showing momentum.'
+      },
+      {
+        title: 'Profitability & Cash Flow',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Gross Profit', value: '$1.69B', change: '+25%', positive: true },
+          { label: 'FY Operating Income', value: '$1.46B', change: '+37%', positive: true },
+          { label: 'Q4 GAAP EPS', value: '$0.57', change: 'Beat est. ~$0.44', positive: true },
+          { label: 'FY Free Cash Flow', value: '$2.0B', change: '~17% margin', positive: true },
+        ],
+        highlight: '10 consecutive quarters of double-digit free cash flow margins. $2B FCF for the year.'
+      },
+      {
+        title: 'GMV & Commerce',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Q4 GMV', value: '$123.8B', change: '+31%', positive: true },
+          { label: 'FY 2025 GMV', value: '$378.4B', change: '+29%', positive: true },
+          { label: 'Shopify Payments GMV', value: '$84B (Q4)', change: '68% of total', positive: true },
+          { label: 'B2B GMV Growth (FY)', value: '+96% YoY', change: 'Accelerating', positive: true },
+        ],
+        highlight: 'B2B GMV nearly doubled. Shopify Payments now processes 68% of total GMV.'
+      },
+      {
+        title: 'Recurring Revenue & Market',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'MRR', value: '$205M', change: '+15%', positive: true },
+          { label: 'Shopify Plus % of MRR', value: '34%', change: 'Up from 33%', positive: true },
+          { label: 'US E-commerce Share', value: '14%+', change: 'Market leader', positive: true },
+          { label: 'Share Buyback Program', value: '$2.0B', change: 'New authorization', positive: true },
+        ],
+        highlight: 'Shopify now commands over 14% of the US e-commerce market. Authorized $2B buyback.'
+      }
+    ]
+  },
+  remitly: {
+    name: 'Remitly Global',
+    ticker: 'RELY',
+    color: '#f59e0b',
+    colorLight: '#fbbf24',
+    colorDark: '#b45309',
+    colorBg: 'rgba(245,158,11,0.12)',
+    x: WORLD_W * 0.2, y: WORLD_H / 2,
+    summary: 'Remitly achieved its first full year of GAAP profitability, swinging from a $37M loss to $67.9M net income. Q4 revenue reached $442.2M (+26%) with FY revenue of $1.635B (+29%). Q4 EPS of $0.19 nearly doubled estimates. Send volume surged to $74.9B for the year (+37%), outpacing customer growth and signaling higher engagement. Free cash flow tripled to $283.3M. The stock jumped ~11.3% post-earnings. FY 2026 guidance calls for ~20% growth to nearly $2B.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$442.2M', change: '+26%', positive: true },
+          { label: 'FY 2025 Revenue', value: '$1.635B', change: '+29%', positive: true },
+          { label: 'Q1 2026 Guidance', value: '$436-438M', change: '+21% YoY', positive: true },
+          { label: 'FY 2026 Guidance', value: '$1.94-1.96B', change: '+19-20%', positive: true },
+        ],
+        highlight: 'Both Q4 and full year results exceeded the company\'s previously issued guidance.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Net Income', value: '$41.2M', change: 'vs. $(5.7)M loss', positive: true },
+          { label: 'FY Net Income', value: '$67.9M', change: 'vs. $(37)M loss', positive: true },
+          { label: 'Q4 Diluted EPS', value: '$0.19', change: 'Beat est. $0.10', positive: true },
+          { label: 'FY Adj. EBITDA', value: '$272.2M', change: '+93%', positive: true },
+        ],
+        highlight: 'First full year of GAAP profitability! Swung from $37M loss to $67.9M profit.'
+      },
+      {
+        title: 'Volume & Customers',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Q4 Send Volume', value: '$20.8B', change: '+35%', positive: true },
+          { label: 'FY Send Volume', value: '$74.9B', change: '+37%', positive: true },
+          { label: 'Active Customers', value: '9.3M', change: '+19%', positive: true },
+          { label: 'FY Adj. EBITDA Margin', value: '16.6%', change: 'Expanding', positive: true },
+        ],
+        highlight: 'Send volume grew 37% for the year, outpacing customer growth - higher engagement per customer.'
+      },
+      {
+        title: 'Cash Flow & Outlook',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Operating Cash Flow', value: '$325.1M', change: '+191%', positive: true },
+          { label: 'Free Cash Flow', value: '$283.3M', change: '+202%', positive: true },
+          { label: 'FY Diluted EPS', value: '$0.31', change: 'vs. $(0.19)', positive: true },
+          { label: 'FY Operating Income', value: '$77.5M', change: 'vs. $(39.1)M', positive: true },
+        ],
+        highlight: 'Free cash flow tripled YoY to $283.3M. Stock jumped ~11.3% post-earnings.'
+      }
+    ]
+  },
+  lemonade: {
+    name: 'Lemonade',
+    ticker: 'LMND',
+    color: '#ec4899',
+    colorLight: '#f472b6',
+    colorDark: '#be185d',
+    colorBg: 'rgba(236,72,153,0.12)',
+    x: WORLD_W * 0.8, y: WORLD_H / 2,
+    summary: 'Lemonade delivered its "strongest quarter ever" per CEO Daniel Schreiber. Q4 revenue surged 53% to $228M, beating consensus by 5.4%. FY revenue hit $737.9M (+40%). The gross loss ratio improved dramatically from 88% to 52% in two years. Adjusted EBITDA loss narrowed to just $5M in Q4, with positive adjusted FCF of $37M. In-force premium grew to $1.24B (+31%) with 9 consecutive quarters of accelerating growth. Car insurance is now in states covering ~50% of the US market.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$228M', change: '+53%', positive: true },
+          { label: 'FY 2025 Revenue', value: '$737.9M', change: '+40%', positive: true },
+          { label: 'Revenue Beat (Q4)', value: '+5.4%', change: 'vs. consensus', positive: true },
+          { label: '2026 Revenue Growth', value: '~60%', change: 'Guidance', positive: true },
+        ],
+        highlight: 'CEO Daniel Schreiber called Q4 2025 the "strongest quarter ever" for Lemonade.'
+      },
+      {
+        title: 'Profitability Progress',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Net Loss', value: '$(22)M', change: 'Improved from $(30)M', positive: true },
+          { label: 'Q4 EPS', value: '$(0.29)', change: 'Beat est. $(0.39)', positive: true },
+          { label: 'Q4 Adj. EBITDA Loss', value: '$(5)M', change: 'Near breakeven', positive: true },
+          { label: 'Q4 Adj. Free Cash Flow', value: '$37M', change: 'Positive!', positive: true },
+        ],
+        highlight: 'Adjusted EBITDA loss narrowed to just $5M. Positive EBITDA targeted for Q4 2026.'
+      },
+      {
+        title: 'Insurance Metrics',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'In Force Premium', value: '$1.24B', change: '+31%', positive: true },
+          { label: 'Gross Loss Ratio', value: '52%', change: 'Was 88% 2yrs ago', positive: true },
+          { label: 'Net New Customers (FY)', value: '~550K', change: '+35% vs. prior', positive: true },
+          { label: 'Premium Per Customer', value: 'Growing', change: '+~7%', positive: true },
+        ],
+        highlight: 'Gross loss ratio improved from 88% to 52% in just two years. 9 consecutive quarters of accelerating IFP growth.'
+      },
+      {
+        title: 'Growth & Balance Sheet',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Cash & Investments', value: '$1.1B', change: 'Strong balance sheet', positive: true },
+          { label: 'Annual Dollar Retention', value: '85%', change: 'Stable', positive: true },
+          { label: 'LTV-to-CAC Ratio', value: '>3x', change: 'Healthy', positive: true },
+          { label: 'Cross-Sell IFP', value: '~20%', change: 'Of total IFP', positive: true },
+        ],
+        highlight: 'Car insurance now available in states covering ~50% of the US market. Pricing Tesla FSD at ~50% of human-driven rates.'
+      }
+    ]
+  }
+};
+
+// ===== WORLD GENERATION =====
+// Pre-generate grass variation map
+const grassMap = [];
+for (let y = 0; y < Math.ceil(WORLD_H/TILE); y++) {
+  grassMap[y] = [];
+  for (let x = 0; x < Math.ceil(WORLD_W/TILE); x++) {
+    grassMap[y][x] = Math.random();
+  }
+}
+
+// Trees (decorative)
+const trees = [];
+for (let i = 0; i < 120; i++) {
+  let tx = Math.random() * WORLD_W;
+  let ty = Math.random() * WORLD_H;
+  // Don't place trees too close to company zones or center
+  let tooClose = false;
+  for (const c of Object.values(companies)) {
+    if (Math.hypot(tx - c.x, ty - c.y) < 280) tooClose = true;
+  }
+  if (Math.hypot(tx - WORLD_W/2, ty - WORLD_H/2) < 200) tooClose = true;
+  if (!tooClose) {
+    trees.push({ x: tx, y: ty, size: 20 + Math.random() * 25, sway: Math.random() * Math.PI * 2 });
+  }
+}
+
+// Flowers
+const flowers = [];
+for (let i = 0; i < 200; i++) {
+  flowers.push({
+    x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
+    color: ['#f472b6','#fbbf24','#60a5fa','#a78bfa','#fb923c','#4ade80'][Math.floor(Math.random()*6)],
+    size: 2 + Math.random() * 3, phase: Math.random() * Math.PI * 2
+  });
+}
+
+// Paths connecting zones
+const paths = [];
+function addPath(x1, y1, x2, y2) {
+  const steps = Math.ceil(Math.hypot(x2-x1, y2-y1) / 20);
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    paths.push({ x: x1 + (x2-x1)*t, y: y1 + (y2-y1)*t });
+  }
+}
+const cx = WORLD_W/2, cy = WORLD_H/2;
+addPath(cx, cy, companies.sofi.x, companies.sofi.y);
+addPath(cx, cy, companies.shopify.x, companies.shopify.y);
+addPath(cx, cy, companies.remitly.x, companies.remitly.y);
+addPath(cx, cy, companies.lemonade.x, companies.lemonade.y);
+
+// ===== PARTICLE SYSTEM =====
+const particles = [];
+function spawnParticle(x, y, color, life) {
+  particles.push({
+    x, y, vx: (Math.random()-0.5)*1.5, vy: -Math.random()*2 - 0.5,
+    life: life || 60, maxLife: life || 60, color, size: 2 + Math.random()*3
+  });
+}
+
+// Ambient floating particles
+const ambientParticles = [];
+for (let i = 0; i < 60; i++) {
+  ambientParticles.push({
+    x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
+    vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3,
+    size: 1 + Math.random()*2, alpha: Math.random(),
+    phase: Math.random() * Math.PI * 2
+  });
+}
+
+// ===== NPC DATA =====
+const zombieInvestors = [
+  { x: 600, y: 400, quote: "I put my life savings into DogeBonk at the top... it was supposed to be the next Doge...", phase: Math.random()*Math.PI*2 },
+  { x: 2800, y: 400, quote: "Diamond hands they said... my portfolio is down 94% but I'm still holding!", phase: Math.random()*Math.PI*2 },
+  { x: 500, y: 1600, quote: "I leveraged 50x on a memecoin called SafeElonMars... it was not safe.", phase: Math.random()*Math.PI*2 },
+  { x: 3100, y: 1600, quote: "Sold my car to buy NFTs of pixelated rocks... they're worth $3 now.", phase: Math.random()*Math.PI*2 },
+  { x: 1200, y: 1000, quote: "I followed a TikTok trader's advice and shorted the S&P 500... with my rent money.", phase: Math.random()*Math.PI*2 },
+  { x: 2400, y: 1000, quote: "My uncle told me to YOLO into a penny stock. He's also broke now.", phase: Math.random()*Math.PI*2 },
+  { x: 1000, y: 1800, quote: "I tried to time the market 47 times last year. Lost money 46 of those times.", phase: Math.random()*Math.PI*2 },
+  { x: 2600, y: 1800, quote: "Bought the dip. Then bought the dip of the dip. Then it dipped more. Send help.", phase: Math.random()*Math.PI*2 },
+];
+zombieInvestors.forEach(z => { z.dir = Math.floor(Math.random()*4); z.wobble = Math.random()*Math.PI*2; });
+
+const famousInvestors = [
+  { x: 1500, y: 1100, name: 'Warren Buffett', quote: "Be fearful when others are greedy, and greedy when others are fearful.", title: 'CEO, Berkshire Hathaway', suitColor: '#1e3a5f', hairColor: '#d1d5db', phase: 0 },
+  { x: 2100, y: 1100, name: 'Peter Lynch', quote: "Know what you own, and know why you own it.", title: 'Former Manager, Magellan Fund', suitColor: '#374151', hairColor: '#78716c', phase: 1 },
+  { x: 1800, y: 800, name: 'Cathie Wood', quote: "Innovation is key. We are investing in the future, not the past.", title: 'CEO, ARK Invest', suitColor: '#4c1d95', hairColor: '#f5f0e1', phase: 2 },
+  { x: 1800, y: 1500, name: 'Charlie Munger', quote: "The big money is not in the buying and the selling, but in the waiting.", title: 'Late Vice Chairman, Berkshire', suitColor: '#1f2937', hairColor: '#e5e7eb', phase: 3 },
+];
+
+let activeNpcDialogue = null;
+let nearestHub = null;
+let hubPanelActive = false;
+
+// ===== CHARACTER =====
+const player = {
+  x: WORLD_W / 2, y: WORLD_H / 2,
+  vx: 0, vy: 0,
+  dir: 0, // 0=down,1=left,2=up,3=right
+  frame: 0, frameTimer: 0,
+  speed: 3.5,
+  moving: false,
+  bobPhase: 0,
+  jumpZ: 0,
+  jumpVel: 0,
+  isJumping: false,
+};
+
+// ===== CAMERA =====
+const camera = { x: 0, y: 0 };
+function updateCamera() {
+  const tx = player.x - canvas.width/2;
+  const ty = player.y - canvas.height/2;
+  camera.x += (tx - camera.x) * 0.08;
+  camera.y += (ty - camera.y) * 0.08;
+  camera.x = Math.max(0, Math.min(WORLD_W - canvas.width, camera.x));
+  camera.y = Math.max(0, Math.min(WORLD_H - canvas.height, camera.y));
+}
+
+// ===== DATA POINTS STATE =====
+const allDataPoints = [];
+let discovered = new Set();
+let activePanel = null;
+let closestPoint = null;
+
+for (const [key, comp] of Object.entries(companies)) {
+  for (let i = 0; i < comp.dataPoints.length; i++) {
+    const dp = comp.dataPoints[i];
+    allDataPoints.push({
+      id: `${key}-${i}`,
+      company: key,
+      x: comp.x + dp.offset.x,
+      y: comp.y + dp.offset.y,
+      data: dp,
+      companyData: comp,
+      pulsePhase: Math.random() * Math.PI * 2,
+    });
+  }
+}
+document.getElementById('disc-total').textContent = allDataPoints.length;
+
+// ===== DRAWING FUNCTIONS =====
+
+function drawGround(time) {
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  skyGrad.addColorStop(0, '#0f172a');
+  skyGrad.addColorStop(1, '#1e293b');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const startCol = Math.max(0, Math.floor(camera.x / TILE));
+  const endCol = Math.min(Math.ceil(WORLD_W/TILE), Math.ceil((camera.x + canvas.width) / TILE) + 1);
+  const startRow = Math.max(0, Math.floor(camera.y / TILE));
+  const endRow = Math.min(Math.ceil(WORLD_H/TILE), Math.ceil((camera.y + canvas.height) / TILE) + 1);
+
+  for (let row = startRow; row < endRow; row++) {
+    for (let col = startCol; col < endCol; col++) {
+      const sx = col * TILE - camera.x;
+      const sy = row * TILE - camera.y;
+      const v = grassMap[row]?.[col] || 0;
+      const g = Math.floor(28 + v * 15);
+      const b = Math.floor(22 + v * 8);
+      ctx.fillStyle = `rgb(${Math.floor(15 + v*5)},${g},${b})`;
+      ctx.fillRect(sx, sy, TILE + 1, TILE + 1);
+
+      // Subtle grass detail
+      if (v > 0.7) {
+        ctx.fillStyle = `rgba(80,160,80,0.15)`;
+        ctx.fillRect(sx + TILE*0.3, sy + TILE*0.4, 2, 6);
+        ctx.fillRect(sx + TILE*0.6, sy + TILE*0.2, 2, 5);
+      }
+    }
+  }
+}
+
+function drawPaths() {
+  for (const p of paths) {
+    const sx = p.x - camera.x, sy = p.y - camera.y;
+    if (sx < -30 || sx > canvas.width+30 || sy < -30 || sy > canvas.height+30) continue;
+    ctx.fillStyle = 'rgba(120,110,90,0.35)';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 18, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(140,130,100,0.15)';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 14, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawTree(tree, time) {
+  const sx = tree.x - camera.x, sy = tree.y - camera.y;
+  if (sx < -60 || sx > canvas.width+60 || sy < -80 || sy > canvas.height+60) return;
+
+  const sway = Math.sin(time * 0.001 + tree.sway) * 2;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + tree.size * 0.5, tree.size * 0.6, tree.size * 0.2, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Trunk
+  ctx.fillStyle = '#5c3d2e';
+  ctx.fillRect(sx - 4, sy - tree.size * 0.5, 8, tree.size * 0.8);
+
+  // Canopy
+  ctx.fillStyle = '#1a5c2a';
+  ctx.beginPath();
+  ctx.arc(sx + sway, sy - tree.size * 0.6, tree.size * 0.55, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#227a38';
+  ctx.beginPath();
+  ctx.arc(sx + sway - 5, sy - tree.size * 0.7, tree.size * 0.4, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#2d9a48';
+  ctx.beginPath();
+  ctx.arc(sx + sway + 6, sy - tree.size * 0.75, tree.size * 0.3, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawFlower(flower, time) {
+  const sx = flower.x - camera.x, sy = flower.y - camera.y;
+  if (sx < -10 || sx > canvas.width+10 || sy < -10 || sy > canvas.height+10) return;
+  const s = flower.size + Math.sin(time*0.003 + flower.phase)*0.5;
+  ctx.fillStyle = flower.color;
+  ctx.globalAlpha = 0.6;
+  ctx.beginPath();
+  ctx.arc(sx, sy, s, 0, Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawCompanyZone(comp, time) {
+  const sx = comp.x - camera.x, sy = comp.y - camera.y;
+  if (sx < -350 || sx > canvas.width+350 || sy < -250 || sy > canvas.height+250) return;
+
+  // Zone glow
+  const glowRadius = 220 + Math.sin(time*0.002)*10;
+  const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowRadius);
+  grad.addColorStop(0, comp.colorBg);
+  grad.addColorStop(0.7, comp.colorBg);
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(sx, sy, glowRadius, 0, Math.PI*2);
+  ctx.fill();
+
+  // Building / structure
+  drawBuilding(sx, sy, comp, time);
+
+  // Company name
+  ctx.fillStyle = comp.color;
+  ctx.font = 'bold 18px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(comp.name, sx, sy - 95);
+  ctx.fillStyle = comp.colorLight;
+  ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(comp.ticker, sx, sy - 78);
+  ctx.textAlign = 'left';
+}
+
+function drawBuilding(sx, sy, comp, time) {
+  const pulse = Math.sin(time * 0.003) * 3;
+
+  // Base platform
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 20, 90, 25, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Main building body
+  const bw = 100, bh = 80;
+  const bx = sx - bw/2, by = sy - bh/2 - 10;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.fillRect(bx + 6, by + 6, bw, bh);
+
+  // Building
+  const buildGrad = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
+  buildGrad.addColorStop(0, comp.colorDark);
+  buildGrad.addColorStop(0.5, comp.color);
+  buildGrad.addColorStop(1, comp.colorDark);
+  ctx.fillStyle = buildGrad;
+
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, bh, 8);
+  ctx.fill();
+
+  // Building highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.roundRect(bx + 4, by + 4, bw - 8, bh/2 - 4, [6,6,0,0]);
+  ctx.fill();
+
+  // Windows
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  for (let wy = 0; wy < 3; wy++) {
+    for (let wx = 0; wx < 4; wx++) {
+      const windowAlpha = 0.15 + Math.sin(time*0.005 + wx + wy*4) * 0.1;
+      ctx.fillStyle = `rgba(255,255,255,${windowAlpha})`;
+      ctx.fillRect(bx + 12 + wx*22, by + 10 + wy*22, 14, 14);
+    }
+  }
+
+  // Roof accent
+  ctx.fillStyle = comp.colorLight;
+  ctx.fillRect(bx, by, bw, 4);
+
+  // Antenna/spire
+  ctx.fillStyle = comp.colorLight;
+  ctx.fillRect(sx - 2, by - 20 + pulse, 4, 20);
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(sx, by - 22 + pulse, 4, 0, Math.PI*2);
+  ctx.fill();
+
+  // Glowing orb at top
+  const orbGrad = ctx.createRadialGradient(sx, by - 22 + pulse, 0, sx, by - 22 + pulse, 12);
+  orbGrad.addColorStop(0, comp.colorLight + '60');
+  orbGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = orbGrad;
+  ctx.beginPath();
+  ctx.arc(sx, by - 22 + pulse, 12, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawDataPoint(dp, time) {
+  const sx = dp.x - camera.x, sy = dp.y - camera.y;
+  if (sx < -80 || sx > canvas.width+80 || sy < -160 || sy > canvas.height+80) return;
+
+  const isDiscovered = discovered.has(dp.id);
+  const isClosest = closestPoint === dp;
+  const pulse = Math.sin(time * 0.004 + dp.pulsePhase);
+  const comp = dp.companyData;
+
+  if (!isDiscovered) {
+    // === BEACON EFFECTS FOR UNDISCOVERED ===
+
+    // Vertical light pillar
+    const pillarH = 120 + pulse * 10;
+    const pillarW = 16 + pulse * 4;
+    const pillarGrad = ctx.createLinearGradient(sx, sy - pillarH, sx, sy);
+    pillarGrad.addColorStop(0, 'transparent');
+    pillarGrad.addColorStop(0.3, comp.colorLight + '15');
+    pillarGrad.addColorStop(0.7, comp.colorLight + '30');
+    pillarGrad.addColorStop(1, comp.colorLight + '50');
+    ctx.fillStyle = pillarGrad;
+    ctx.fillRect(sx - pillarW/2, sy - pillarH, pillarW, pillarH);
+
+    // Wider soft pillar
+    const widePillarGrad = ctx.createLinearGradient(sx, sy - pillarH * 0.8, sx, sy);
+    widePillarGrad.addColorStop(0, 'transparent');
+    widePillarGrad.addColorStop(1, comp.colorLight + '10');
+    ctx.fillStyle = widePillarGrad;
+    ctx.fillRect(sx - pillarW, sy - pillarH * 0.8, pillarW * 2, pillarH * 0.8);
+
+    // Bright outer glow
+    const glowSize = isClosest ? 44 + pulse*6 : 36 + pulse*4;
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowSize);
+    grad.addColorStop(0, comp.colorLight + 'a0');
+    grad.addColorStop(0.4, comp.colorLight + '50');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(sx, sy, glowSize, 0, Math.PI*2);
+    ctx.fill();
+
+    // Multiple concentric pulsing rings
+    for (let r = 0; r < 3; r++) {
+      const ringSize = 18 + ((time * 0.025 + dp.pulsePhase * 10 + r * 15) % 40);
+      const ringAlpha = Math.max(0, 1 - ringSize / 55);
+      ctx.strokeStyle = comp.colorLight + Math.floor(ringAlpha*200).toString(16).padStart(2,'0');
+      ctx.lineWidth = 2 - r * 0.4;
+      ctx.beginPath();
+      ctx.arc(sx, sy, ringSize, 0, Math.PI*2);
+      ctx.stroke();
+    }
+
+    // Sparkle particles
+    for (let i = 0; i < 5; i++) {
+      const sparkAngle = time * 0.002 + i * Math.PI * 2 / 5 + dp.pulsePhase;
+      const sparkDist = 20 + Math.sin(time * 0.003 + i * 1.5) * 10;
+      const sparkX = sx + Math.cos(sparkAngle) * sparkDist;
+      const sparkY = sy + Math.sin(sparkAngle) * sparkDist - Math.sin(time * 0.005 + i) * 8;
+      const sparkAlpha = 0.4 + Math.sin(time * 0.006 + i * 2) * 0.3;
+      ctx.fillStyle = `rgba(255,255,255,${sparkAlpha})`;
+      ctx.beginPath();
+      ctx.arc(sparkX, sparkY, 1.5, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Inner marker (brighter for undiscovered)
+    const markerSize = isClosest ? 11 + pulse*2 : 9;
+    ctx.fillStyle = comp.colorLight;
+    ctx.shadowColor = comp.colorLight;
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(sx, sy, markerSize, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // White center
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(sx, sy, markerSize * 0.45, 0, Math.PI*2);
+    ctx.fill();
+
+  } else {
+    // === DISCOVERED (dimmed) ===
+    const glowSize = isClosest ? 28 + pulse*4 : 18 + pulse*2;
+    const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowSize);
+    grad.addColorStop(0, comp.color + '40');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(sx, sy, glowSize, 0, Math.PI*2);
+    ctx.fill();
+
+    const markerSize = isClosest ? 8 + pulse*1.5 : 6;
+    ctx.fillStyle = comp.color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, markerSize, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.arc(sx, sy, markerSize * 0.45, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Label
+  if (isClosest || isDiscovered) {
+    ctx.fillStyle = isClosest ? '#fff' : '#aaa';
+    ctx.font = `${isClosest ? 'bold ' : ''}11px "Segoe UI", system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    const markerSize = isDiscovered ? 6 : 9;
+    ctx.fillText(dp.data.title, sx, sy - markerSize - 10);
+    if (isClosest && !isDiscovered) {
+      ctx.fillStyle = comp.colorLight;
+      ctx.font = '10px "Segoe UI", system-ui, sans-serif';
+      ctx.fillText('[ Walk closer ]', sx, sy + markerSize + 18);
+    }
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawCharacter(time) {
+  const sx = player.x - camera.x, sy = player.y - camera.y;
+  const bob = player.moving ? Math.sin(player.bobPhase) * 2 : 0;
+  const jumpOffset = player.jumpZ;
+
+  // Shadow (scales with jump height)
+  const shadowScale = Math.max(0.3, 1 - Math.abs(jumpOffset) / 80);
+  ctx.fillStyle = `rgba(0,0,0,${0.3 * shadowScale})`;
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 18, 12 * shadowScale, 5 * shadowScale, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  const frame = player.frame;
+  const dir = player.dir;
+  const legSwing = player.moving ? Math.sin(player.bobPhase) * 6 : 0;
+  const armSwing = player.moving ? Math.sin(player.bobPhase) * 8 : 0;
+
+  ctx.save();
+  ctx.translate(sx, sy + bob + jumpOffset);
+
+  // === LEGS ===
+  ctx.fillStyle = '#1e3a5f';
+  // Left leg
+  ctx.save();
+  ctx.translate(-4, 6);
+  ctx.rotate(legSwing * Math.PI/180 * 3);
+  ctx.fillRect(-3, 0, 6, 14);
+  // Shoe
+  ctx.fillStyle = '#2d2d2d';
+  ctx.fillRect(-3, 12, 7, 4);
+  ctx.restore();
+  // Right leg
+  ctx.fillStyle = '#1e3a5f';
+  ctx.save();
+  ctx.translate(4, 6);
+  ctx.rotate(-legSwing * Math.PI/180 * 3);
+  ctx.fillRect(-3, 0, 6, 14);
+  ctx.fillStyle = '#2d2d2d';
+  ctx.fillRect(-4, 12, 7, 4);
+  ctx.restore();
+
+  // === BODY / TORSO ===
+  // Shirt
+  ctx.fillStyle = '#3b82f6';
+  ctx.beginPath();
+  ctx.roundRect(-10, -10, 20, 20, 3);
+  ctx.fill();
+  // Shirt detail - collar
+  ctx.fillStyle = '#2563eb';
+  ctx.beginPath();
+  ctx.moveTo(-4, -10);
+  ctx.lineTo(0, -6);
+  ctx.lineTo(4, -10);
+  ctx.closePath();
+  ctx.fill();
+
+  // === ARMS ===
+  ctx.fillStyle = '#f5c6a0';
+  // Left arm
+  ctx.save();
+  ctx.translate(-12, -6);
+  ctx.rotate(-armSwing * Math.PI/180 * 2.5);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillRect(-3, 0, 6, 10);
+  ctx.fillStyle = '#f5c6a0';
+  ctx.fillRect(-2, 9, 5, 5);
+  ctx.restore();
+  // Right arm
+  ctx.save();
+  ctx.translate(12, -6);
+  ctx.rotate(armSwing * Math.PI/180 * 2.5);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillRect(-3, 0, 6, 10);
+  ctx.fillStyle = '#f5c6a0';
+  ctx.fillRect(-3, 9, 5, 5);
+  ctx.restore();
+
+  // === HEAD ===
+  // Neck
+  ctx.fillStyle = '#f5c6a0';
+  ctx.fillRect(-3, -15, 6, 6);
+
+  // Head shape
+  ctx.fillStyle = '#f5c6a0';
+  ctx.beginPath();
+  ctx.ellipse(0, -24, 11, 13, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Hair
+  ctx.fillStyle = '#3d2314';
+  ctx.beginPath();
+  ctx.ellipse(0, -30, 12, 9, 0, Math.PI, Math.PI*2);
+  ctx.fill();
+  // Hair sides
+  ctx.fillRect(-12, -30, 3, 10);
+  ctx.fillRect(9, -30, 3, 10);
+
+  // Face features based on direction
+  if (dir === 2) {
+    // Facing up - show back of head
+    ctx.fillStyle = '#3d2314';
+    ctx.beginPath();
+    ctx.ellipse(0, -24, 10, 12, 0, 0, Math.PI*2);
+    ctx.fill();
+  } else {
+    // Eyes
+    const eyeOffX = dir === 1 ? -3 : dir === 3 ? 3 : 0;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(-4 + eyeOffX, -25, 3, 3.5, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(4 + eyeOffX, -25, 3, 3.5, 0, 0, Math.PI*2);
+    ctx.fill();
+    // Pupils
+    const pupilShift = dir === 1 ? -1 : dir === 3 ? 1 : 0;
+    ctx.fillStyle = '#2d1810';
+    ctx.beginPath();
+    ctx.arc(-4 + eyeOffX + pupilShift, -25, 1.8, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(4 + eyeOffX + pupilShift, -25, 1.8, 0, Math.PI*2);
+    ctx.fill();
+    // Eye shine
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-3.5 + eyeOffX + pupilShift, -26, 0.8, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(4.5 + eyeOffX + pupilShift, -26, 0.8, 0, Math.PI*2);
+    ctx.fill();
+
+    // Eyebrows
+    ctx.strokeStyle = '#3d2314';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-7 + eyeOffX, -29);
+    ctx.lineTo(-2 + eyeOffX, -30);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(2 + eyeOffX, -30);
+    ctx.lineTo(7 + eyeOffX, -29);
+    ctx.stroke();
+
+    // Mouth
+    ctx.strokeStyle = '#c9826a';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    if (player.moving) {
+      ctx.arc(eyeOffX, -19, 3, 0.1, Math.PI - 0.1);
+    } else {
+      ctx.moveTo(-3 + eyeOffX, -19);
+      ctx.lineTo(3 + eyeOffX, -19);
+    }
+    ctx.stroke();
+
+    // Nose
+    ctx.fillStyle = '#e8a88a';
+    ctx.beginPath();
+    ctx.arc(eyeOffX, -22, 1.5, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+
+  // Walking particles
+  if (player.moving && Math.random() < 0.3) {
+    spawnParticle(
+      player.x + (Math.random()-0.5)*10,
+      player.y + 18,
+      'rgba(120,140,100,0.5)',
+      25
+    );
+  }
+}
+
+function drawZombie(zombie, time) {
+  const sx = zombie.x - camera.x, sy = zombie.y - camera.y;
+  if (sx < -40 || sx > canvas.width+40 || sy < -60 || sy > canvas.height+40) return;
+
+  const wobble = Math.sin(time * 0.002 + zombie.wobble) * 3;
+  const shamble = Math.sin(time * 0.0015 + zombie.phase) * 1.5;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 16, 10, 4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.translate(sx + shamble, sy);
+  ctx.rotate(wobble * Math.PI / 180 * 2);
+
+  // Legs (tattered pants)
+  ctx.fillStyle = '#4a5540';
+  ctx.fillRect(-5, 4, 5, 13);
+  ctx.fillRect(1, 4, 5, 13);
+  // Tattered edges
+  ctx.fillStyle = '#3d4835';
+  ctx.fillRect(-5, 14, 3, 3);
+  ctx.fillRect(3, 15, 3, 2);
+
+  // Body (torn shirt)
+  ctx.fillStyle = '#5c6b52';
+  ctx.beginPath();
+  ctx.roundRect(-9, -10, 18, 18, 2);
+  ctx.fill();
+  // Tears
+  ctx.fillStyle = '#6b8a5e';
+  ctx.fillRect(-7, -4, 4, 6);
+  ctx.fillRect(4, -2, 3, 5);
+
+  // Arms (outstretched zombie pose)
+  const armBob = Math.sin(time * 0.003 + zombie.phase) * 5;
+  ctx.fillStyle = '#7a9a6b';
+  ctx.save();
+  ctx.translate(-11, -6);
+  ctx.rotate((-30 + armBob) * Math.PI / 180);
+  ctx.fillRect(-2, 0, 5, 14);
+  ctx.fillStyle = '#7a9a6b';
+  ctx.fillRect(-1, 12, 4, 4);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(11, -6);
+  ctx.rotate((30 - armBob) * Math.PI / 180);
+  ctx.fillRect(-3, 0, 5, 14);
+  ctx.fillStyle = '#7a9a6b';
+  ctx.fillRect(-2, 12, 4, 4);
+  ctx.restore();
+
+  // Head
+  ctx.fillStyle = '#7a9a6b';
+  ctx.beginPath();
+  ctx.ellipse(0, -22, 10, 12, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Messy hair
+  ctx.fillStyle = '#4a5540';
+  ctx.beginPath();
+  ctx.ellipse(0, -28, 11, 7, 0, Math.PI, Math.PI*2);
+  ctx.fill();
+  ctx.fillRect(-11, -28, 3, 8);
+  ctx.fillRect(8, -28, 3, 6);
+
+  // Eyes (hollow/glowing)
+  ctx.fillStyle = '#2d3328';
+  ctx.beginPath();
+  ctx.arc(-4, -23, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(4, -23, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#c4ff90';
+  ctx.beginPath();
+  ctx.arc(-4, -23, 1.5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(4, -23, 1.5, 0, Math.PI*2);
+  ctx.fill();
+
+  // Mouth (groaning)
+  ctx.fillStyle = '#3d4835';
+  ctx.beginPath();
+  ctx.ellipse(0, -16, 4, 2.5 + Math.sin(time*0.004)*1, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // Label
+  ctx.fillStyle = '#8aaa7a';
+  ctx.font = '9px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Retail Investor', sx, sy + 28);
+  ctx.textAlign = 'left';
+}
+
+function drawFamousInvestor(investor, time) {
+  const sx = investor.x - camera.x, sy = investor.y - camera.y;
+  if (sx < -40 || sx > canvas.width+40 || sy < -60 || sy > canvas.height+40) return;
+
+  const idle = Math.sin(time * 0.002 + investor.phase) * 1;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 16, 10, 4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.translate(sx, sy + idle);
+
+  // Legs (dress pants)
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(-5, 4, 5, 14);
+  ctx.fillRect(1, 4, 5, 14);
+  // Shoes
+  ctx.fillStyle = '#111';
+  ctx.fillRect(-6, 16, 6, 3);
+  ctx.fillRect(1, 16, 6, 3);
+
+  // Body (suit jacket)
+  ctx.fillStyle = investor.suitColor;
+  ctx.beginPath();
+  ctx.roundRect(-10, -10, 20, 18, 3);
+  ctx.fill();
+  // Suit lapels
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(-4, -10);
+  ctx.lineTo(0, -2);
+  ctx.lineTo(4, -10);
+  ctx.closePath();
+  ctx.fill();
+  // Tie
+  ctx.fillStyle = '#b91c1c';
+  ctx.fillRect(-2, -8, 4, 12);
+  ctx.beginPath();
+  ctx.moveTo(-3, 4);
+  ctx.lineTo(0, 7);
+  ctx.lineTo(3, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Arms (at sides, distinguished)
+  ctx.fillStyle = investor.suitColor;
+  ctx.fillRect(-14, -8, 5, 14);
+  ctx.fillRect(9, -8, 5, 14);
+  // Hands
+  ctx.fillStyle = '#f5c6a0';
+  ctx.fillRect(-13, 5, 4, 4);
+  ctx.fillRect(10, 5, 4, 4);
+
+  // Head
+  ctx.fillStyle = '#f5c6a0';
+  ctx.beginPath();
+  ctx.ellipse(0, -22, 10, 12, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Hair
+  ctx.fillStyle = investor.hairColor;
+  ctx.beginPath();
+  ctx.ellipse(0, -28, 11, 7, 0, Math.PI, Math.PI*2);
+  ctx.fill();
+  ctx.fillRect(-11, -28, 3, 6);
+  ctx.fillRect(8, -28, 3, 6);
+
+  // Glasses (for distinction)
+  ctx.strokeStyle = 'rgba(200,200,200,0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(-4, -23, 4, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(4, -23, 4, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, -23);
+  ctx.lineTo(0, -23);
+  ctx.stroke();
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.ellipse(-4, -23, 2.5, 3, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(4, -23, 2.5, 3, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#2d1810';
+  ctx.beginPath();
+  ctx.arc(-4, -23, 1.5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(4, -23, 1.5, 0, Math.PI*2);
+  ctx.fill();
+
+  // Friendly smile
+  ctx.strokeStyle = '#c9826a';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(0, -18, 3.5, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  ctx.restore();
+
+  // Name label
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 10px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(investor.name, sx, sy + 28);
+  ctx.fillStyle = '#888';
+  ctx.font = '8px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(investor.title, sx, sy + 38);
+  ctx.textAlign = 'left';
+}
+
+function drawCenterHub(time) {
+  const sx = WORLD_W/2 - camera.x, sy = WORLD_H/2 - camera.y;
+  if (sx < -200 || sx > canvas.width+200 || sy < -200 || sy > canvas.height+200) return;
+
+  // Center platform
+  ctx.fillStyle = 'rgba(60,60,80,0.3)';
+  ctx.beginPath();
+  ctx.arc(sx, sy, 80, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(80,80,100,0.25)';
+  ctx.beginPath();
+  ctx.arc(sx, sy, 60, 0, Math.PI*2);
+  ctx.fill();
+
+  // Fountain
+  const fountainY = sy - 10;
+  ctx.fillStyle = '#4a5568';
+  ctx.beginPath();
+  ctx.ellipse(sx, fountainY + 15, 30, 10, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#2d3748';
+  ctx.fillRect(sx - 6, fountainY - 15, 12, 30);
+  ctx.fillStyle = '#4a5568';
+  ctx.beginPath();
+  ctx.ellipse(sx, fountainY - 15, 10, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Water particles
+  for (let i = 0; i < 5; i++) {
+    const angle = (time * 0.003 + i * Math.PI * 2 / 5) % (Math.PI * 2);
+    const dist = 8 + Math.sin(time * 0.005 + i) * 4;
+    const wx = sx + Math.cos(angle) * dist;
+    const wy = fountainY - 18 + Math.sin(time * 0.004 + i * 2) * 6;
+    ctx.fillStyle = `rgba(100,180,255,${0.3 + Math.sin(time*0.005+i)*0.2})`;
+    ctx.beginPath();
+    ctx.arc(wx, wy, 2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Direction signs
+  const signs = [
+    { label: 'SoFi', color: companies.sofi.color, angle: Math.PI/2 },
+    { label: 'Shopify', color: companies.shopify.color, angle: -Math.PI/2 },
+    { label: 'Remitly', color: companies.remitly.color, angle: Math.PI },
+    { label: 'Lemonade', color: companies.lemonade.color, angle: 0 },
+  ];
+  for (const sign of signs) {
+    const signX = sx + Math.cos(sign.angle) * 100;
+    const signY = sy + Math.sin(sign.angle) * 70;
+    // Arrow
+    ctx.fillStyle = sign.color;
+    ctx.font = 'bold 11px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    const arrow = sign.angle === 0 ? '\u2192' : sign.angle === Math.PI ? '\u2190' : sign.angle < 0 ? '\u2191' : '\u2193';
+    ctx.fillText(`${arrow} ${sign.label}`, signX, signY);
+  }
+  ctx.textAlign = 'left';
+
+  // Welcome text
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Earnings Explorer', sx, sy - 55);
+  ctx.fillStyle = '#888';
+  ctx.font = '10px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('Q4 & FY 2025', sx, sy - 42);
+  ctx.textAlign = 'left';
+}
+
+function drawParticles(time) {
+  // Player particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.02;
+    p.life--;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    const alpha = p.life / p.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x - camera.x, p.y - camera.y, p.size * alpha, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Ambient particles
+  for (const p of ambientParticles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.phase += 0.02;
+    if (p.x < 0) p.x = WORLD_W;
+    if (p.x > WORLD_W) p.x = 0;
+    if (p.y < 0) p.y = WORLD_H;
+    if (p.y > WORLD_H) p.y = 0;
+    const sx = p.x - camera.x, sy = p.y - camera.y;
+    if (sx < -10 || sx > canvas.width+10 || sy < -10 || sy > canvas.height+10) continue;
+    const a = 0.15 + Math.sin(p.phase) * 0.1;
+    ctx.fillStyle = `rgba(200,220,255,${a})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, p.size, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawMinimap() {
+  mmCtx.fillStyle = '#0f172a';
+  mmCtx.fillRect(0, 0, 180, 120);
+
+  const scaleX = 180 / WORLD_W;
+  const scaleY = 120 / WORLD_H;
+
+  // Zones
+  for (const comp of Object.values(companies)) {
+    mmCtx.fillStyle = comp.color + '60';
+    mmCtx.beginPath();
+    mmCtx.arc(comp.x * scaleX, comp.y * scaleY, 12, 0, Math.PI*2);
+    mmCtx.fill();
+    mmCtx.fillStyle = comp.color;
+    mmCtx.beginPath();
+    mmCtx.arc(comp.x * scaleX, comp.y * scaleY, 4, 0, Math.PI*2);
+    mmCtx.fill();
+  }
+
+  // Data points
+  for (const dp of allDataPoints) {
+    mmCtx.fillStyle = discovered.has(dp.id) ? dp.companyData.color : 'rgba(255,255,255,0.3)';
+    mmCtx.beginPath();
+    mmCtx.arc(dp.x * scaleX, dp.y * scaleY, 2, 0, Math.PI*2);
+    mmCtx.fill();
+  }
+
+  // NPCs on minimap
+  for (const z of zombieInvestors) {
+    mmCtx.fillStyle = 'rgba(122,154,107,0.6)';
+    mmCtx.beginPath();
+    mmCtx.arc(z.x * scaleX, z.y * scaleY, 2, 0, Math.PI*2);
+    mmCtx.fill();
+  }
+  for (const inv of famousInvestors) {
+    mmCtx.fillStyle = 'rgba(251,191,36,0.7)';
+    mmCtx.beginPath();
+    mmCtx.arc(inv.x * scaleX, inv.y * scaleY, 2.5, 0, Math.PI*2);
+    mmCtx.fill();
+  }
+
+  // Viewport
+  mmCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+  mmCtx.lineWidth = 1;
+  mmCtx.strokeRect(
+    camera.x * scaleX, camera.y * scaleY,
+    canvas.width * scaleX, canvas.height * scaleY
+  );
+
+  // Player
+  mmCtx.fillStyle = '#fff';
+  mmCtx.beginPath();
+  mmCtx.arc(player.x * scaleX, player.y * scaleY, 3, 0, Math.PI*2);
+  mmCtx.fill();
+}
+
+// ===== DATA PANEL =====
+function showDataPanel(dp) {
+  const panel = document.getElementById('data-panel');
+  const comp = dp.companyData;
+  const data = dp.data;
+
+  let html = `
+    <h2 style="color:${comp.color}">${comp.name}</h2>
+    <div class="subtitle">${data.title}</div>
+  `;
+
+  for (const m of data.metrics) {
+    html += `
+      <div class="metric-row">
+        <span class="metric-label">${m.label}</span>
+        <span>
+          <span class="metric-value">${m.value}</span>
+          <span class="metric-change ${m.positive ? 'change-positive' : 'change-negative'}">${m.change}</span>
+        </span>
+      </div>
+    `;
+  }
+
+  html += `<div class="highlight" style="background:${comp.colorBg}; border-left: 3px solid ${comp.color}">${data.highlight}</div>`;
+  html += `<div class="prompt">Walk away to close</div>`;
+
+  panel.innerHTML = html;
+  panel.classList.add('visible');
+}
+
+function hideDataPanel() {
+  document.getElementById('data-panel').classList.remove('visible');
+}
+
+// ===== ZONE LABEL =====
+function updateZoneLabel() {
+  const label = document.getElementById('zone-label');
+  let zone = null;
+  for (const comp of Object.values(companies)) {
+    if (Math.hypot(player.x - comp.x, player.y - comp.y) < 260) {
+      zone = comp;
+      break;
+    }
+  }
+  if (Math.hypot(player.x - WORLD_W/2, player.y - WORLD_H/2) < 100) {
+    label.textContent = 'Central Hub';
+    label.classList.add('visible');
+  } else if (zone) {
+    label.textContent = `${zone.name} (${zone.ticker})`;
+    label.style.borderColor = zone.color;
+    label.classList.add('visible');
+  } else {
+    label.classList.remove('visible');
+  }
+}
+
+// ===== WORLD BOUNDARY =====
+const BORDER = 30;
+
+// ===== GAME LOOP =====
+let lastTime = 0;
+function gameLoop(time) {
+  const dt = Math.min(time - lastTime, 33);
+  lastTime = time;
+
+  // === UPDATE ===
+  // Movement
+  let dx = 0, dy = 0;
+  if (keys['w'] || keys['arrowup']) { dy = -1; player.dir = 2; }
+  if (keys['s'] || keys['arrowdown']) { dy = 1; player.dir = 0; }
+  if (keys['a'] || keys['arrowleft']) { dx = -1; player.dir = 1; }
+  if (keys['d'] || keys['arrowright']) { dx = 1; player.dir = 3; }
+
+  player.moving = dx !== 0 || dy !== 0;
+  if (player.moving) {
+    const len = Math.sqrt(dx*dx + dy*dy);
+    dx /= len; dy /= len;
+
+    // Check for tree collisions
+    let blocked = false;
+    const nx = player.x + dx * player.speed;
+    const ny = player.y + dy * player.speed;
+    for (const tree of trees) {
+      if (Math.hypot(nx - tree.x, ny - tree.y) < 18) {
+        blocked = true;
+        break;
+      }
+    }
+    // Check for building collisions
+    for (const comp of Object.values(companies)) {
+      if (Math.abs(nx - comp.x) < 55 && Math.abs(ny - comp.y) < 45) {
+        blocked = true;
+        break;
+      }
+    }
+    // Check for NPC collisions
+    if (!blocked) {
+      for (const z of zombieInvestors) {
+        if (Math.hypot(nx - z.x, ny - z.y) < 20) { blocked = true; break; }
+      }
+    }
+    if (!blocked) {
+      for (const inv of famousInvestors) {
+        if (Math.hypot(nx - inv.x, ny - inv.y) < 20) { blocked = true; break; }
+      }
+    }
+
+    if (!blocked) {
+      player.x += dx * player.speed;
+      player.y += dy * player.speed;
+    }
+    player.x = Math.max(BORDER, Math.min(WORLD_W - BORDER, player.x));
+    player.y = Math.max(BORDER, Math.min(WORLD_H - BORDER, player.y));
+    player.bobPhase += 0.2;
+    player.frameTimer++;
+    if (player.frameTimer > 8) { player.frame = (player.frame + 1) % 4; player.frameTimer = 0; }
+  }
+
+  // Jump physics
+  if (player.isJumping) {
+    player.jumpVel += 0.5; // gravity
+    player.jumpZ += player.jumpVel;
+    if (player.jumpZ >= 0) {
+      player.jumpZ = 0;
+      player.jumpVel = 0;
+      player.isJumping = false;
+      // Landing particles
+      for (let i = 0; i < 5; i++) {
+        spawnParticle(player.x + (Math.random()-0.5)*16, player.y + 18, 'rgba(120,140,100,0.5)', 20);
+      }
+    }
+  }
+
+  updateCamera();
+
+  // Find closest data point
+  let minDist = Infinity;
+  closestPoint = null;
+  for (const dp of allDataPoints) {
+    const d = Math.hypot(player.x - dp.x, player.y - dp.y);
+    if (d < minDist) { minDist = d; closestPoint = dp; }
+  }
+
+  if (minDist > 80) closestPoint = null;
+
+  // Show/hide panel
+  if (closestPoint && minDist < 45) {
+    if (activePanel !== closestPoint.id) {
+      activePanel = closestPoint.id;
+      discovered.add(closestPoint.id);
+      document.getElementById('disc-count').textContent = discovered.size;
+      showDataPanel(closestPoint);
+      // Celebration particles
+      for (let i = 0; i < 15; i++) {
+        spawnParticle(
+          closestPoint.x + (Math.random()-0.5)*30,
+          closestPoint.y + (Math.random()-0.5)*30,
+          closestPoint.companyData.colorLight,
+          40 + Math.random()*20
+        );
+      }
+    }
+  } else if (activePanel && !hubPanelActive && minDist > 70) {
+    activePanel = null;
+    hideDataPanel();
+  }
+
+  updateZoneLabel();
+
+  // Hub proximity detection
+  const hubPrompt = document.getElementById('hub-prompt');
+  nearestHub = null;
+  for (const [key, comp] of Object.entries(companies)) {
+    const hubDist = Math.hypot(player.x - comp.x, player.y - comp.y);
+    if (hubDist < 90 && hubDist > 40) {
+      nearestHub = comp;
+      break;
+    }
+  }
+  if (nearestHub) {
+    hubPrompt.classList.add('visible');
+    if (keys['_ePressed']) {
+      keys['_ePressed'] = false;
+      if (!hubPanelActive) {
+        hubPanelActive = true;
+        activePanel = 'hub-' + nearestHub.ticker;
+        const panel = document.getElementById('data-panel');
+        let html = `
+          <h2 style="color:${nearestHub.color}">${nearestHub.name}</h2>
+          <div class="subtitle">${nearestHub.ticker} - Quarterly Overview</div>
+          <div class="highlight" style="background:${nearestHub.colorBg}; border-left: 3px solid ${nearestHub.color}; margin-top: 0;">${nearestHub.summary}</div>
+          <div class="prompt">Walk away to close</div>
+        `;
+        panel.innerHTML = html;
+        panel.classList.add('visible');
+      }
+    }
+  } else {
+    hubPrompt.classList.remove('visible');
+    keys['_ePressed'] = false;
+    if (hubPanelActive) {
+      hubPanelActive = false;
+      activePanel = null;
+      hideDataPanel();
+    }
+  }
+
+  // NPC proximity & dialogue
+  const npcDialogue = document.getElementById('npc-dialogue');
+  let foundNpc = false;
+
+  for (const z of zombieInvestors) {
+    if (Math.hypot(player.x - z.x, player.y - z.y) < 55) {
+      if (activeNpcDialogue !== z) {
+        activeNpcDialogue = z;
+        npcDialogue.querySelector('.npc-name').textContent = 'Zombie Retail Investor';
+        npcDialogue.querySelector('.npc-name').style.color = '#8aaa7a';
+        npcDialogue.querySelector('.npc-quote').textContent = `"${z.quote}"`;
+        npcDialogue.querySelector('.npc-label').textContent = 'Lost everything on meme stocks';
+      }
+      npcDialogue.classList.add('visible');
+      foundNpc = true;
+      break;
+    }
+  }
+
+  if (!foundNpc) {
+    for (const inv of famousInvestors) {
+      if (Math.hypot(player.x - inv.x, player.y - inv.y) < 55) {
+        if (activeNpcDialogue !== inv) {
+          activeNpcDialogue = inv;
+          npcDialogue.querySelector('.npc-name').textContent = inv.name;
+          npcDialogue.querySelector('.npc-name').style.color = '#fbbf24';
+          npcDialogue.querySelector('.npc-quote').textContent = `"${inv.quote}"`;
+          npcDialogue.querySelector('.npc-label').textContent = inv.title;
+        }
+        npcDialogue.classList.add('visible');
+        foundNpc = true;
+        break;
+      }
+    }
+  }
+
+  if (!foundNpc) {
+    npcDialogue.classList.remove('visible');
+    activeNpcDialogue = null;
+  }
+
+  // === DRAW ===
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawGround(time);
+  drawPaths();
+
+  // Flowers (below everything)
+  for (const f of flowers) drawFlower(f, time);
+
+  drawCenterHub(time);
+
+  // Company zones
+  for (const comp of Object.values(companies)) drawCompanyZone(comp, time);
+
+  // Data points
+  for (const dp of allDataPoints) drawDataPoint(dp, time);
+
+  // Build depth-sorted entity list (trees, NPCs, player)
+  const entities = [];
+  for (const t of trees) entities.push({ type: 'tree', y: t.y, data: t });
+  for (const z of zombieInvestors) entities.push({ type: 'zombie', y: z.y, data: z });
+  for (const inv of famousInvestors) entities.push({ type: 'investor', y: inv.y, data: inv });
+  entities.push({ type: 'player', y: player.y });
+  entities.sort((a, b) => a.y - b.y);
+
+  for (const e of entities) {
+    if (e.type === 'tree') drawTree(e.data, time);
+    else if (e.type === 'zombie') drawZombie(e.data, time);
+    else if (e.type === 'investor') drawFamousInvestor(e.data, time);
+    else if (e.type === 'player') drawCharacter(time);
+  }
+
+  drawParticles(time);
+
+  // World border indicator
+  if (player.x < 100 || player.x > WORLD_W-100 || player.y < 100 || player.y > WORLD_H-100) {
+    ctx.fillStyle = 'rgba(255,100,100,0.08)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Vignette
+  const vigGrad = ctx.createRadialGradient(
+    canvas.width/2, canvas.height/2, canvas.height * 0.4,
+    canvas.width/2, canvas.height/2, canvas.height * 0.9
+  );
+  vigGrad.addColorStop(0, 'transparent');
+  vigGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+  ctx.fillStyle = vigGrad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Minimap
+  drawMinimap();
+
+  // Check if all discovered
+  if (discovered.size === allDataPoints.length) {
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+    ctx.fillStyle = '#4ade80';
+    ctx.font = 'bold 16px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('All earnings data discovered! You explored everything!', canvas.width/2, canvas.height - 22);
+    ctx.textAlign = 'left';
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <radialGradient id="centerGlow" cx="50%" cy="50%" r="40%">
+      <stop offset="0%" stop-color="rgba(251,191,36,0.12)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <radialGradient id="sofiGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shopGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22c55e" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="remGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lemGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur1"><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#sky)"/>
+
+  <!-- Grass texture hint -->
+  <rect y="400" width="1200" height="230" fill="#0d1f0d" opacity="0.3"/>
+
+  <!-- Subtle grid/path lines -->
+  <line x1="600" y1="315" x2="300" y2="480" stroke="#4a5568" stroke-width="8" stroke-linecap="round" opacity="0.2"/>
+  <line x1="600" y1="315" x2="900" y2="480" stroke="#4a5568" stroke-width="8" stroke-linecap="round" opacity="0.2"/>
+  <line x1="600" y1="315" x2="300" y2="180" stroke="#4a5568" stroke-width="8" stroke-linecap="round" opacity="0.2"/>
+  <line x1="600" y1="315" x2="900" y2="180" stroke="#4a5568" stroke-width="8" stroke-linecap="round" opacity="0.2"/>
+
+  <!-- Company zone glows -->
+  <circle cx="300" cy="180" r="110" fill="url(#shopGlow)"/>
+  <circle cx="900" cy="180" r="110" fill="url(#remGlow)"/>
+  <circle cx="300" cy="480" r="110" fill="url(#sofiGlow)"/>
+  <circle cx="900" cy="480" r="110" fill="url(#lemGlow)"/>
+
+  <!-- Center glow -->
+  <circle cx="600" cy="315" r="200" fill="url(#centerGlow)"/>
+
+  <!-- Company buildings (simplified) -->
+  <!-- Shopify -->
+  <rect x="265" y="140" width="70" height="55" rx="5" fill="#15803d"/>
+  <rect x="265" y="140" width="70" height="3" fill="#4ade80"/>
+  <rect x="275" y="150" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="290" y="150" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="305" y="150" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="275" y="168" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="290" y="168" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="305" y="168" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <text x="300" y="215" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="16" fill="#22c55e">Shopify</text>
+  <text x="300" y="230" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#4ade80">SHOP</text>
+
+  <!-- Remitly -->
+  <rect x="865" y="140" width="70" height="55" rx="5" fill="#b45309"/>
+  <rect x="865" y="140" width="70" height="3" fill="#fbbf24"/>
+  <rect x="875" y="150" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="890" y="150" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="905" y="150" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="875" y="168" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="890" y="168" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="905" y="168" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <text x="900" y="215" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="16" fill="#f59e0b">Remitly</text>
+  <text x="900" y="230" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#fbbf24">RELY</text>
+
+  <!-- SoFi -->
+  <rect x="265" y="440" width="70" height="55" rx="5" fill="#3730a3"/>
+  <rect x="265" y="440" width="70" height="3" fill="#818cf8"/>
+  <rect x="275" y="450" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="290" y="450" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="305" y="450" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="275" y="468" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="290" y="468" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="305" y="468" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <text x="300" y="515" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="16" fill="#6366f1">SoFi</text>
+  <text x="300" y="530" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#818cf8">SOFI</text>
+
+  <!-- Lemonade -->
+  <rect x="865" y="440" width="70" height="55" rx="5" fill="#be185d"/>
+  <rect x="865" y="440" width="70" height="3" fill="#f472b6"/>
+  <rect x="875" y="450" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="890" y="450" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="905" y="450" width="10" height="10" fill="rgba(255,255,255,0.2)"/>
+  <rect x="875" y="468" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="890" y="468" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <rect x="905" y="468" width="10" height="10" fill="rgba(255,255,255,0.15)"/>
+  <text x="900" y="515" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="16" fill="#ec4899">Lemonade</text>
+  <text x="900" y="530" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="11" fill="#f472b6">LMND</text>
+
+  <!-- Data orbs with beacon glow -->
+  <!-- Shopify orbs -->
+  <circle cx="240" cy="165" r="8" fill="#4ade80" opacity="0.7"/>
+  <circle cx="240" cy="165" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="238" y="130" width="4" height="30" rx="2" fill="#4ade80" opacity="0.2"/>
+  <circle cx="360" cy="165" r="8" fill="#4ade80" opacity="0.7"/>
+  <circle cx="360" cy="165" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="358" y="130" width="4" height="30" rx="2" fill="#4ade80" opacity="0.2"/>
+
+  <!-- SoFi orbs -->
+  <circle cx="240" cy="465" r="8" fill="#818cf8" opacity="0.7"/>
+  <circle cx="240" cy="465" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="238" y="430" width="4" height="30" rx="2" fill="#818cf8" opacity="0.2"/>
+  <circle cx="360" cy="465" r="8" fill="#818cf8" opacity="0.7"/>
+  <circle cx="360" cy="465" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="358" y="430" width="4" height="30" rx="2" fill="#818cf8" opacity="0.2"/>
+
+  <!-- Remitly orbs -->
+  <circle cx="840" cy="165" r="8" fill="#fbbf24" opacity="0.7"/>
+  <circle cx="840" cy="165" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="838" y="130" width="4" height="30" rx="2" fill="#fbbf24" opacity="0.2"/>
+  <circle cx="960" cy="165" r="8" fill="#fbbf24" opacity="0.7"/>
+  <circle cx="960" cy="165" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="958" y="130" width="4" height="30" rx="2" fill="#fbbf24" opacity="0.2"/>
+
+  <!-- Lemonade orbs -->
+  <circle cx="840" cy="465" r="8" fill="#f472b6" opacity="0.7"/>
+  <circle cx="840" cy="465" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="838" y="430" width="4" height="30" rx="2" fill="#f472b6" opacity="0.2"/>
+  <circle cx="960" cy="465" r="8" fill="#f472b6" opacity="0.7"/>
+  <circle cx="960" cy="465" r="4" fill="#fff" opacity="0.8"/>
+  <rect x="958" y="430" width="4" height="30" rx="2" fill="#f472b6" opacity="0.2"/>
+
+  <!-- Character (center) -->
+  <!-- Shadow -->
+  <ellipse cx="600" cy="348" rx="12" ry="5" fill="rgba(0,0,0,0.3)"/>
+  <!-- Legs -->
+  <rect x="594" y="336" width="5" height="12" rx="1" fill="#1e3a5f"/>
+  <rect x="601" y="336" width="5" height="12" rx="1" fill="#1e3a5f"/>
+  <!-- Body -->
+  <rect x="590" y="320" width="20" height="18" rx="3" fill="#3b82f6"/>
+  <!-- Arms -->
+  <rect x="582" y="322" width="5" height="12" rx="2" fill="#3b82f6"/>
+  <rect x="613" y="322" width="5" height="12" rx="2" fill="#3b82f6"/>
+  <!-- Head -->
+  <ellipse cx="600" cy="308" rx="10" ry="12" fill="#f5c6a0"/>
+  <!-- Hair -->
+  <ellipse cx="600" cy="300" rx="11" ry="8" fill="#3d2314"/>
+  <!-- Eyes -->
+  <circle cx="596" cy="307" r="2" fill="#fff"/>
+  <circle cx="604" cy="307" r="2" fill="#fff"/>
+  <circle cx="596" cy="307" r="1" fill="#2d1810"/>
+  <circle cx="604" cy="307" r="1" fill="#2d1810"/>
+
+  <!-- Zombie NPC (left of center) -->
+  <ellipse cx="480" cy="368" rx="9" ry="4" fill="rgba(0,0,0,0.2)"/>
+  <rect x="474" y="356" width="5" height="11" fill="#4a5540"/>
+  <rect x="481" y="356" width="5" height="11" fill="#4a5540"/>
+  <rect x="471" y="340" width="18" height="16" rx="2" fill="#5c6b52"/>
+  <ellipse cx="480" cy="328" rx="9" ry="11" fill="#7a9a6b"/>
+  <circle cx="476" cy="326" r="1.5" fill="#c4ff90"/>
+  <circle cx="484" cy="326" r="1.5" fill="#c4ff90"/>
+  <text x="480" y="382" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="8" fill="#8aaa7a">Retail Investor</text>
+
+  <!-- Famous investor NPC (right of center) -->
+  <ellipse cx="720" cy="368" rx="9" ry="4" fill="rgba(0,0,0,0.2)"/>
+  <rect x="714" y="356" width="5" height="11" fill="#1a1a2e"/>
+  <rect x="721" y="356" width="5" height="11" fill="#1a1a2e"/>
+  <rect x="711" y="340" width="18" height="16" rx="2" fill="#1e3a5f"/>
+  <rect x="718" y="342" width="4" height="11" fill="#b91c1c"/>
+  <ellipse cx="720" cy="328" rx="9" ry="11" fill="#f5c6a0"/>
+  <ellipse cx="720" cy="321" rx="10" ry="7" fill="#d1d5db"/>
+  <circle cx="716" cy="327" r="1.5" fill="#2d1810"/>
+  <circle cx="724" cy="327" r="1.5" fill="#2d1810"/>
+  <text x="720" y="382" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="9" fill="#fbbf24">Warren Buffett</text>
+
+  <!-- Trees -->
+  <rect x="170" y="290" width="6" height="30" fill="#5c3d2e"/>
+  <circle cx="173" cy="280" r="16" fill="#1a5c2a"/>
+  <circle cx="168" cy="274" r="11" fill="#227a38"/>
+
+  <rect x="1020" y="290" width="6" height="30" fill="#5c3d2e"/>
+  <circle cx="1023" cy="280" r="16" fill="#1a5c2a"/>
+  <circle cx="1028" cy="274" r="11" fill="#227a38"/>
+
+  <rect x="540" y="540" width="5" height="25" fill="#5c3d2e"/>
+  <circle cx="542" cy="532" r="13" fill="#1a5c2a"/>
+
+  <rect x="660" y="540" width="5" height="25" fill="#5c3d2e"/>
+  <circle cx="662" cy="532" r="13" fill="#1a5c2a"/>
+
+  <!-- Title -->
+  <text x="600" y="62" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="42" fill="#fff">EARNINGS EXPLORER</text>
+  <!-- Gradient overlay on title (simulated with colored letters) -->
+  <text x="600" y="62" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-weight="700" font-size="42" fill="url(#titleGrad)" opacity="0.5">EARNINGS EXPLORER</text>
+
+  <defs>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="33%" stop-color="#a78bfa"/>
+      <stop offset="66%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Subtitle -->
+  <text x="600" y="88" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="18" fill="#888" letter-spacing="3">Q4 2025 &amp; FY 2025 Earnings</text>
+
+  <!-- Tagline -->
+  <text x="600" y="610" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="14" fill="#666">Walk. Discover. Learn. An interactive earnings experience.</text>
+
+  <!-- Sparkle decorations -->
+  <circle cx="150" cy="80" r="2" fill="#fff" opacity="0.4"/>
+  <circle cx="1050" cy="95" r="1.5" fill="#fff" opacity="0.3"/>
+  <circle cx="200" cy="560" r="2" fill="#fff" opacity="0.25"/>
+  <circle cx="1000" cy="570" r="1.5" fill="#fff" opacity="0.3"/>
+  <circle cx="500" cy="120" r="1" fill="#fff" opacity="0.35"/>
+  <circle cx="700" cy="110" r="1.5" fill="#fff" opacity="0.3"/>
+  <circle cx="100" cy="400" r="1" fill="#fff" opacity="0.2"/>
+  <circle cx="1100" cy="350" r="1.5" fill="#fff" opacity="0.25"/>
+
+  <!-- Vignette overlay -->
+  <rect width="1200" height="630" fill="url(#vignette)"/>
+  <defs>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.4)"/>
+    </radialGradient>
+  </defs>
+</svg>
