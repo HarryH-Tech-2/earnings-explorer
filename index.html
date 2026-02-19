@@ -161,6 +161,15 @@
   }
   #celebration-msg p { font-size: 16px; color: #ccc; }
   @keyframes celebBounce { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+  #easter-toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: rgba(251,191,36,0.95); border-radius: 10px; padding: 10px 22px;
+    color: #1a1a2e; font-size: 14px; font-weight: 700; z-index: 60;
+    pointer-events: none; opacity: 0; transition: opacity 0.4s, transform 0.4s;
+    text-align: center; white-space: nowrap;
+  }
+  #easter-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
@@ -170,6 +179,10 @@
   <a href="https://x.com/HarryHH1993" target="_blank" rel="noopener">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
     @HarryHH1993
+  </a>
+  <a href="https://www.etoro.com/people/harryh1993/" target="_blank" rel="noopener">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+    eToro
   </a>
   <button id="mute-btn" title="Toggle Music">&#x1f50a;</button>
 </div>
@@ -183,6 +196,7 @@
 <div id="disclaimer">Not financial advice. All data is for informational and entertainment purposes only. Do your own research before making investment decisions.</div>
 <div id="celebration-overlay"><div id="celebration-msg"><h2>All Earnings Discovered!</h2><p>You explored every data point. Legendary analyst status achieved.</p></div></div>
 <audio id="bg-music" loop preload="auto" src="quarter-by-quarter.mp3"></audio>
+<div id="easter-toast"></div>
 
 <div id="instructions">
   <h1>Earnings Explorer</h1>
@@ -241,11 +255,41 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     if (!player.isJumping) {
       player.isJumping = true;
-      player.jumpVel = -9;
+      player.jumpVel = superJumpActive ? -14 : -9;
     }
   }
   if (e.key.toLowerCase() === 'e') {
     keys['_ePressed'] = true;
+  }
+  // Konami code detection
+  if (e.key.toLowerCase() === konamiSequence[konamiProgress]) {
+    konamiProgress++;
+    if (konamiProgress === konamiSequence.length) {
+      konamiProgress = 0;
+      if (!konamiActivated) {
+        konamiActivated = true;
+        rainbowMode = true;
+        easterEggsFound.add('konami');
+        showEasterToast('KONAMI CODE! Rainbow mode activated!');
+      }
+    }
+  } else {
+    konamiProgress = e.key.toLowerCase() === konamiSequence[0] ? 1 : 0;
+  }
+  // Triple jump detection
+  if (e.key === ' ' || e.code === 'Space') {
+    const now = Date.now();
+    if (now - lastJumpTime < 500) {
+      jumpCount++;
+      if (jumpCount >= 3 && !superJumpActive) {
+        superJumpActive = true;
+        easterEggsFound.add('superjump');
+        showEasterToast('SUPER JUMP UNLOCKED! You can jump higher now!');
+      }
+    } else {
+      jumpCount = 1;
+    }
+    lastJumpTime = now;
   }
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -635,6 +679,46 @@ let activeNpcDialogue = null;
 let nearestHub = null;
 let hubPanelActive = false;
 let celebrationTriggered = false;
+
+// ===== EASTER EGGS =====
+let easterEggsFound = new Set();
+let easterToastTimer = null;
+
+function showEasterToast(msg) {
+  const toast = document.getElementById('easter-toast');
+  toast.textContent = msg;
+  toast.classList.add('visible');
+  if (easterToastTimer) clearTimeout(easterToastTimer);
+  easterToastTimer = setTimeout(() => toast.classList.remove('visible'), 3000);
+}
+
+// 1. Hidden golden coin in far corner of map
+const goldenCoin = { x: 120, y: 120, collected: false };
+
+// 2. Secret message stone in opposite corner
+const secretStone = { x: WORLD_W - 120, y: WORLD_H - 120, found: false };
+
+// 3. Hidden dev NPC tucked away
+const hiddenNpcs = [
+  { x: 4050, y: 150, name: 'The Dev', quote: "I built this whole world in one file. Don't judge me.", title: 'Creator of this game', color: '#60a5fa', found: false },
+  { x: 150, y: WORLD_H - 150, name: 'Diamond Hands Dan', quote: "I've been holding since $3. Through the crash, through the dip, through it all. And you know what? I'd do it again.", title: 'OG Investor', color: '#fbbf24', found: false },
+];
+
+// 4. Konami code tracker
+const konamiSequence = ['arrowup','arrowup','arrowdown','arrowdown','arrowleft','arrowright','arrowleft','arrowright','b','a'];
+let konamiProgress = 0;
+let konamiActivated = false;
+let rainbowMode = false;
+
+// 5. Spin tracker - spin in circles fast
+let spinTracker = { lastDir: -1, spins: 0, dirChanges: 0, lastChangeTime: 0 };
+let discoMode = false;
+let discoTimer = 0;
+
+// 6. Triple jump secret
+let jumpCount = 0;
+let lastJumpTime = 0;
+let superJumpActive = false;
 
 // ===== CHARACTER =====
 const player = {
@@ -1772,6 +1856,11 @@ function gameLoop(time) {
         if (Math.hypot(nx - inv.x, ny - inv.y) < 20) { blocked = true; break; }
       }
     }
+    if (!blocked) {
+      for (const hnpc of hiddenNpcs) {
+        if (Math.hypot(nx - hnpc.x, ny - hnpc.y) < 20) { blocked = true; break; }
+      }
+    }
 
     if (!blocked) {
       player.x += dx * curSpeed;
@@ -1834,6 +1923,51 @@ function gameLoop(time) {
   }
 
   updateZoneLabel();
+
+  // === EASTER EGG UPDATES ===
+  // Golden coin pickup
+  if (!goldenCoin.collected && Math.hypot(player.x - goldenCoin.x, player.y - goldenCoin.y) < 30) {
+    goldenCoin.collected = true;
+    easterEggsFound.add('coin');
+    showEasterToast('You found the Golden Coin! Hidden in the corner...');
+    for (let i = 0; i < 30; i++) spawnParticle(goldenCoin.x, goldenCoin.y, '#fbbf24', 50 + Math.random()*30);
+  }
+  // Secret stone
+  if (!secretStone.found && Math.hypot(player.x - secretStone.x, player.y - secretStone.y) < 30) {
+    secretStone.found = true;
+    easterEggsFound.add('stone');
+    showEasterToast('Ancient Wisdom: "Buy low, sell... wait, what was I saying?"');
+    for (let i = 0; i < 30; i++) spawnParticle(secretStone.x, secretStone.y, '#a78bfa', 50 + Math.random()*30);
+  }
+  // Hidden NPCs
+  for (const hnpc of hiddenNpcs) {
+    if (!hnpc.found && Math.hypot(player.x - hnpc.x, player.y - hnpc.y) < 55) {
+      hnpc.found = true;
+      easterEggsFound.add('npc-' + hnpc.name);
+      showEasterToast(`Secret NPC found: ${hnpc.name}!`);
+    }
+  }
+  // Spin detection (rapidly change direction 8+ times)
+  if (player.moving && player.dir !== spinTracker.lastDir && spinTracker.lastDir !== -1) {
+    const now = Date.now();
+    if (now - spinTracker.lastChangeTime < 300) {
+      spinTracker.dirChanges++;
+      if (spinTracker.dirChanges >= 8 && !discoMode) {
+        discoMode = true;
+        discoTimer = 600; // 10 seconds at 60fps
+        easterEggsFound.add('disco');
+        showEasterToast('DISCO MODE! You spun around like a maniac!');
+      }
+    } else {
+      spinTracker.dirChanges = 1;
+    }
+    spinTracker.lastChangeTime = now;
+  }
+  spinTracker.lastDir = player.dir;
+  if (discoMode) {
+    discoTimer--;
+    if (discoTimer <= 0) discoMode = false;
+  }
 
   // Hub proximity detection
   const hubPrompt = document.getElementById('hub-prompt');
@@ -1911,6 +2045,23 @@ function gameLoop(time) {
   }
 
   if (!foundNpc) {
+    for (const hnpc of hiddenNpcs) {
+      if (Math.hypot(player.x - hnpc.x, player.y - hnpc.y) < 55) {
+        if (activeNpcDialogue !== hnpc) {
+          activeNpcDialogue = hnpc;
+          npcDialogue.querySelector('.npc-name').textContent = hnpc.name;
+          npcDialogue.querySelector('.npc-name').style.color = hnpc.color;
+          npcDialogue.querySelector('.npc-quote').textContent = `"${hnpc.quote}"`;
+          npcDialogue.querySelector('.npc-label').textContent = hnpc.title;
+        }
+        npcDialogue.classList.add('visible');
+        foundNpc = true;
+        break;
+      }
+    }
+  }
+
+  if (!foundNpc) {
     npcDialogue.classList.remove('visible');
     activeNpcDialogue = null;
   }
@@ -1932,11 +2083,53 @@ function gameLoop(time) {
   // Data points
   for (const dp of allDataPoints) drawDataPoint(dp, time);
 
-  // Build depth-sorted entity list (trees, NPCs, player)
+  // === DRAW EASTER EGG OBJECTS ===
+  // Golden coin
+  if (!goldenCoin.collected) {
+    const gcx = goldenCoin.x - camera.x, gcy = goldenCoin.y - camera.y;
+    if (gcx > -40 && gcx < canvas.width+40 && gcy > -40 && gcy < canvas.height+40) {
+      const coinPulse = Math.sin(time * 0.005) * 2;
+      const coinGlow = ctx.createRadialGradient(gcx, gcy, 0, gcx, gcy, 25 + coinPulse);
+      coinGlow.addColorStop(0, 'rgba(251,191,36,0.4)');
+      coinGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = coinGlow;
+      ctx.beginPath(); ctx.arc(gcx, gcy, 25 + coinPulse, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fbbf24';
+      ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(gcx, gcy, 8, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = 'bold 10px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('$', gcx, gcy + 4);
+      ctx.textAlign = 'left';
+    }
+  }
+  // Secret stone
+  if (!secretStone.found) {
+    const ssx = secretStone.x - camera.x, ssy = secretStone.y - camera.y;
+    if (ssx > -40 && ssx < canvas.width+40 && ssy > -40 && ssy < canvas.height+40) {
+      ctx.fillStyle = '#6b7280';
+      ctx.beginPath(); ctx.arc(ssx, ssy, 12, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#9ca3af';
+      ctx.beginPath(); ctx.arc(ssx - 2, ssy - 3, 8, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#a78bfa';
+      ctx.font = '8px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('?', ssx, ssy + 3);
+      const stoneGlow = Math.sin(time * 0.003) * 0.15 + 0.15;
+      ctx.fillStyle = `rgba(167,139,250,${stoneGlow})`;
+      ctx.beginPath(); ctx.arc(ssx, ssy, 18, 0, Math.PI*2); ctx.fill();
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // Build depth-sorted entity list (trees, NPCs, player, hidden NPCs)
   const entities = [];
   for (const t of trees) entities.push({ type: 'tree', y: t.y, data: t });
   for (const z of zombieInvestors) entities.push({ type: 'zombie', y: z.y, data: z });
   for (const inv of famousInvestors) entities.push({ type: 'investor', y: inv.y, data: inv });
+  for (const hnpc of hiddenNpcs) entities.push({ type: 'hiddenNpc', y: hnpc.y, data: hnpc });
   entities.push({ type: 'player', y: player.y });
   entities.sort((a, b) => a.y - b.y);
 
@@ -1944,6 +2137,50 @@ function gameLoop(time) {
     if (e.type === 'tree') drawTree(e.data, time);
     else if (e.type === 'zombie') drawZombie(e.data, time);
     else if (e.type === 'investor') drawFamousInvestor(e.data, time);
+    else if (e.type === 'hiddenNpc') {
+      // Draw hidden NPC - mysterious cloaked figure
+      const hn = e.data;
+      const hx = hn.x - camera.x, hy = hn.y - camera.y;
+      if (hx > -40 && hx < canvas.width+40 && hy > -60 && hy < canvas.height+40) {
+        const hIdle = Math.sin(time * 0.002 + hn.x) * 1;
+        ctx.save();
+        ctx.translate(hx, hy + hIdle);
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath(); ctx.ellipse(0, 16, 10, 4, 0, 0, Math.PI*2); ctx.fill();
+        // Cloak body
+        ctx.fillStyle = '#1a1a2e';
+        ctx.beginPath();
+        ctx.moveTo(-12, -8);
+        ctx.lineTo(-14, 16);
+        ctx.lineTo(14, 16);
+        ctx.lineTo(12, -8);
+        ctx.closePath();
+        ctx.fill();
+        // Hood
+        ctx.fillStyle = '#1a1a2e';
+        ctx.beginPath(); ctx.arc(0, -14, 12, Math.PI, Math.PI*2); ctx.fill();
+        ctx.fillRect(-12, -14, 24, 6);
+        // Face in shadow
+        ctx.fillStyle = '#2d1f3d';
+        ctx.beginPath(); ctx.ellipse(0, -16, 8, 9, 0, 0, Math.PI*2); ctx.fill();
+        // Glowing eyes
+        ctx.fillStyle = hn.color;
+        ctx.shadowColor = hn.color; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.arc(-3, -17, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(3, -17, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        // Name label (only when found/nearby)
+        if (hn.found || Math.hypot(player.x - hn.x, player.y - hn.y) < 60) {
+          ctx.fillStyle = hn.color;
+          ctx.font = 'bold 10px "Segoe UI", system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(hn.name, hx, hy + 28);
+          ctx.textAlign = 'left';
+        }
+      }
+    }
     else if (e.type === 'player') drawCharacter(time);
   }
 
@@ -1964,6 +2201,30 @@ function gameLoop(time) {
   vigGrad.addColorStop(1, 'rgba(0,0,0,0.2)');
   ctx.fillStyle = vigGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Rainbow mode overlay (Konami code)
+  if (rainbowMode) {
+    const hue = (time * 0.1) % 360;
+    ctx.fillStyle = `hsla(${hue}, 80%, 50%, 0.04)`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Disco mode overlay (spin easter egg)
+  if (discoMode) {
+    for (let i = 0; i < 6; i++) {
+      const dx2 = Math.cos(time * 0.003 + i * Math.PI/3) * canvas.width * 0.4;
+      const dy2 = Math.sin(time * 0.004 + i * Math.PI/3) * canvas.height * 0.4;
+      const dGrad = ctx.createRadialGradient(
+        canvas.width/2 + dx2, canvas.height/2 + dy2, 0,
+        canvas.width/2 + dx2, canvas.height/2 + dy2, 150
+      );
+      const hue2 = (time * 0.2 + i * 60) % 360;
+      dGrad.addColorStop(0, `hsla(${hue2}, 90%, 60%, 0.08)`);
+      dGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = dGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+  }
 
   // Minimap
   drawMinimap();
