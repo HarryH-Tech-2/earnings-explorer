@@ -4,31 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Earnings Explorer - Q4 & FY 2025</title>
-<meta name="description" content="Walk through a vibrant world and discover Q4 & FY 2025 earnings from SoFi, Shopify, Remitly, and Lemonade. An interactive earnings experience.">
+<meta name="description" content="Walk through a vibrant world and discover Q4 & FY 2025 earnings from SoFi, Shopify, Remitly, Lemonade, and Opendoor. An interactive earnings experience.">
 <meta property="og:title" content="Earnings Explorer - Q4 & FY 2025">
-<meta property="og:description" content="Walk through a vibrant world and discover the latest earnings from SoFi, Shopify, Remitly, and Lemonade. Talk to zombie retail investors and famous investors!">
+<meta property="og:description" content="Walk through a vibrant world and discover the latest earnings from SoFi, Shopify, Remitly, Lemonade, and Opendoor. Talk to zombie retail investors and famous investors!">
 <meta property="og:image" content="https://harryh-tech-2.github.io/earnings-explorer/social-preview.png.svg">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://harryh-tech-2.github.io/earnings-explorer/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Earnings Explorer - Q4 & FY 2025">
-<meta name="twitter:description" content="An interactive game to explore Q4 & FY 2025 earnings from SoFi, Shopify, Remitly, and Lemonade.">
+<meta name="twitter:description" content="An interactive game to explore Q4 & FY 2025 earnings from SoFi, Shopify, Remitly, Lemonade, and Opendoor.">
 <meta name="twitter:image" content="https://harryh-tech-2.github.io/earnings-explorer/social-preview.png.svg">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0a1a; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { background: #121228; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
   canvas { display: block; }
 
   #hud {
-    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-    background: rgba(10,10,30,0.85); border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 12px; padding: 8px 24px; color: #ccc; font-size: 13px;
-    backdrop-filter: blur(10px); z-index: 10; text-align: center;
-    pointer-events: none;
+    position: fixed; top: 16px; left: 16px;
+    display: flex; gap: 10px; align-items: center;
+    z-index: 10;
   }
-  #hud .title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 1px; }
-  #hud .sub { font-size: 11px; color: #888; margin-top: 2px; }
+  #hud a, #hud button {
+    background: rgba(10,10,30,0.85); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px; padding: 6px 12px; color: #ccc; font-size: 12px;
+    backdrop-filter: blur(10px); cursor: pointer; text-decoration: none;
+    display: flex; align-items: center; gap: 5px; font-family: inherit;
+    transition: background 0.2s, color 0.2s;
+  }
+  #hud a:hover, #hud button:hover { background: rgba(30,30,60,0.9); color: #fff; }
+  #mute-btn { font-size: 16px; padding: 6px 10px; }
 
   #minimap {
     position: fixed; bottom: 16px; right: 16px;
@@ -130,14 +135,43 @@
     opacity: 0; transition: opacity 0.3s;
   }
   #hub-prompt.visible { opacity: 1; }
+
+  #disclaimer {
+    position: fixed; bottom: 16px; left: 16px;
+    background: rgba(10,10,30,0.75); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px; padding: 5px 10px; color: #666; font-size: 9px;
+    backdrop-filter: blur(10px); z-index: 10; max-width: 280px;
+    line-height: 1.4; pointer-events: none;
+  }
+
+  #celebration-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 50; pointer-events: none; opacity: 0; transition: opacity 0.5s;
+  }
+  #celebration-overlay.visible { opacity: 1; }
+  #celebration-msg {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center; color: #fff;
+    animation: celebBounce 0.6s ease-out;
+  }
+  #celebration-msg h2 {
+    font-size: 42px; margin-bottom: 8px;
+    background: linear-gradient(135deg, #fbbf24, #f472b6, #60a5fa, #4ade80);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  #celebration-msg p { font-size: 16px; color: #ccc; }
+  @keyframes celebBounce { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 50% { transform: translate(-50%, -50%) scale(1.1); } 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
 <div id="hud">
-  <div class="title">EARNINGS EXPLORER</div>
-  <div class="sub">Q4 2025 & FY 2025 Earnings</div>
+  <a href="https://x.com/HarryHH1993" target="_blank" rel="noopener">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    @HarryHH1993
+  </a>
+  <button id="mute-btn" title="Toggle Music">&#x1f50a;</button>
 </div>
 
 <div id="discovered">Discovered: <span id="disc-count">0</span> / <span id="disc-total">0</span></div>
@@ -146,11 +180,14 @@
 <div id="minimap"><canvas id="minimap-canvas" width="180" height="120"></canvas></div>
 <div id="npc-dialogue"><div class="npc-name"></div><div class="npc-quote"></div><div class="npc-label"></div></div>
 <div id="hub-prompt">Press E for Company Overview</div>
+<div id="disclaimer">Not financial advice. All data is for informational and entertainment purposes only. Do your own research before making investment decisions.</div>
+<div id="celebration-overlay"><div id="celebration-msg"><h2>All Earnings Discovered!</h2><p>You explored every data point. Legendary analyst status achieved.</p></div></div>
+<audio id="bg-music" loop preload="auto" src="quarter-by-quarter.mp3"></audio>
 
 <div id="instructions">
   <h1>Earnings Explorer</h1>
   <div class="version">Q4 2025 & Full Year 2025</div>
-  <p>Walk through a vibrant world and discover the latest earnings from <strong>SoFi</strong>, <strong>Shopify</strong>, <strong>Remitly</strong>, and <strong>Lemonade</strong>.</p>
+  <p>Walk through a vibrant world and discover the latest earnings from <strong>SoFi</strong>, <strong>Shopify</strong>, <strong>Remitly</strong>, <strong>Lemonade</strong>, and <strong>Opendoor</strong>.</p>
   <div class="keys">
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
       <div class="key">W</div>
@@ -184,8 +221,8 @@ resize();
 window.addEventListener('resize', resize);
 
 // ===== CONSTANTS =====
-const WORLD_W = 3600;
-const WORLD_H = 2400;
+const WORLD_W = 4200;
+const WORLD_H = 2800;
 const TILE = 48;
 
 // ===== INPUT =====
@@ -218,6 +255,7 @@ const companies = {
     colorLight: '#818cf8',
     colorDark: '#3730a3',
     colorBg: 'rgba(99,102,241,0.12)',
+    earningsUrl: 'https://s27.q4cdn.com/749715820/files/doc_financials/2025/q4/2025-Q4-Earnings-Release.pdf',
     x: WORLD_W / 2, y: WORLD_H * 0.78,
     summary: 'SoFi delivered a landmark Q4 with its first-ever $1B revenue quarter. Full-year revenue hit $3.6B (+38%) with GAAP net income of $481M. Record member growth of 1M in Q4 brought total members to 13.7M. The lending platform generated $10.5B in originations while deposits surged to $37.5B. Adjusted EBITDA reached $1.1B (+58%), demonstrating powerful operating leverage across financial services, lending, and tech platform segments.',
     dataPoints: [
@@ -274,6 +312,7 @@ const companies = {
     colorLight: '#4ade80',
     colorDark: '#15803d',
     colorBg: 'rgba(34,197,94,0.12)',
+    earningsUrl: 'https://www.shopify.com/news/shopify-q4-2025-financial-results',
     x: WORLD_W / 2, y: WORLD_H * 0.22,
     summary: 'Shopify crushed Q4 with $3.67B revenue (+31%) and FY revenue of $11.56B (+30%), actually accelerating from FY 2024. GAAP EPS of $0.57 beat estimates by 30%. GMV hit $123.8B in Q4, with B2B GMV nearly doubling. The company generated $2B in free cash flow for the year at ~17% margins - 10 consecutive quarters of double-digit FCF margins. Shopify now commands over 14% of the US e-commerce market and authorized a $2B share buyback.',
     dataPoints: [
@@ -330,6 +369,7 @@ const companies = {
     colorLight: '#fbbf24',
     colorDark: '#b45309',
     colorBg: 'rgba(245,158,11,0.12)',
+    earningsUrl: 'https://ir.remitly.com/news-releases/news-release-details/remitly-reports-fourth-quarter-and-full-year-2025-results-above',
     x: WORLD_W * 0.2, y: WORLD_H / 2,
     summary: 'Remitly achieved its first full year of GAAP profitability, swinging from a $37M loss to $67.9M net income. Q4 revenue reached $442.2M (+26%) with FY revenue of $1.635B (+29%). Q4 EPS of $0.19 nearly doubled estimates. Send volume surged to $74.9B for the year (+37%), outpacing customer growth and signaling higher engagement. Free cash flow tripled to $283.3M. The stock jumped ~11.3% post-earnings. FY 2026 guidance calls for ~20% growth to nearly $2B.',
     dataPoints: [
@@ -386,6 +426,7 @@ const companies = {
     colorLight: '#f472b6',
     colorDark: '#be185d',
     colorBg: 'rgba(236,72,153,0.12)',
+    earningsUrl: 'https://www.businesswire.com/news/home/20260219273586/en/Lemonade-Announces-Fourth-Quarter-and-Full-Year-2025-Financial-Results',
     x: WORLD_W * 0.8, y: WORLD_H / 2,
     summary: 'Lemonade delivered its "strongest quarter ever" per CEO Daniel Schreiber. Q4 revenue surged 53% to $228M, beating consensus by 5.4%. FY revenue hit $737.9M (+40%). The gross loss ratio improved dramatically from 88% to 52% in two years. Adjusted EBITDA loss narrowed to just $5M in Q4, with positive adjusted FCF of $37M. In-force premium grew to $1.24B (+31%) with 9 consecutive quarters of accelerating growth. Car insurance is now in states covering ~50% of the US market.',
     dataPoints: [
@@ -434,6 +475,63 @@ const companies = {
         highlight: 'Car insurance now available in states covering ~50% of the US market. Pricing Tesla FSD at ~50% of human-driven rates.'
       }
     ]
+  },
+  opendoor: {
+    name: 'Opendoor Technologies',
+    ticker: 'OPEN',
+    color: '#8b5cf6',
+    colorLight: '#a78bfa',
+    colorDark: '#5b21b6',
+    colorBg: 'rgba(139,92,246,0.12)',
+    earningsUrl: 'https://investor.opendoor.com/news-releases/news-release-details/q4-2025-open-house-opendoor-20-does-what-it-said-it-would-do',
+    x: WORLD_W * 0.8, y: WORLD_H * 0.78,
+    summary: 'Opendoor reported Q4 results reflecting its "Opendoor 2.0" restructuring. Revenue declined 32% YoY to $736M as the company deliberately shrank inventory from 6,417 to 2,867 homes. The $1.1B GAAP net loss includes prior-period inventory write-downs and restructuring charges. Positive signals: Q4 home purchases surged 46% QoQ, inventory days fell 23%, stale homes dropped from 51% to 33%, and Adjusted EBITDA improved YoY. Cash rose to $962M. Management targets Adjusted Net Income breakeven by year-end 2026.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$736M', change: '-32%', positive: false },
+          { label: 'FY 2025 Revenue', value: '$4.37B', change: '-15%', positive: false },
+          { label: 'Q4 Gross Margin', value: '7.7%', change: 'Flat YoY', positive: true },
+          { label: 'Q1 2026 Guidance', value: '~$662M', change: '-10% QoQ', positive: false },
+        ],
+        highlight: 'Revenue declined as Opendoor deliberately shrunk inventory to reset portfolio quality.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Net Loss', value: '$(1,096)M', change: 'Write-downs', positive: false },
+          { label: 'Q4 Diluted EPS', value: '$(1.26)', change: 'Restructuring', positive: false },
+          { label: 'Q4 Adj. EBITDA', value: '$(43)M', change: 'Improved YoY', positive: true },
+          { label: 'FY Adj. EBITDA', value: '$(83)M', change: 'Loss nearly halved', positive: true },
+        ],
+        highlight: 'Adjusted EBITDA loss nearly halved YoY. Targeting Adj. Net Income breakeven by end of 2026.'
+      },
+      {
+        title: 'Homes & Inventory',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Q4 Homes Sold', value: '1,978', change: '-30% YoY', positive: false },
+          { label: 'Q4 Homes Purchased', value: '1,706', change: '+46% QoQ', positive: true },
+          { label: 'Ending Inventory', value: '2,867 homes', change: 'Down from 6,417', positive: true },
+          { label: 'Stale Homes (>120d)', value: '33%', change: 'Down from 51%', positive: true },
+        ],
+        highlight: 'Q4 home purchases surged 46% QoQ - the key inflection signal. Inventory days fell 23%.'
+      },
+      {
+        title: 'Cash & Outlook',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Cash & Equivalents', value: '$962M', change: 'Up from $671M', positive: true },
+          { label: 'Q4 Contribution Profit', value: '$7M', change: '1.0% margin', positive: true },
+          { label: 'Cash Plus Product', value: '35% of volume', change: 'Growing', positive: true },
+          { label: 'Fixed OpEx', value: '$35M', change: '-$8M YoY', positive: true },
+        ],
+        highlight: 'Cash rose to $962M. "Cash Plus" product now 35% of weekly volume. Oct cohort 50%+ already sold.'
+      }
+    ]
   }
 };
 
@@ -449,7 +547,7 @@ for (let y = 0; y < Math.ceil(WORLD_H/TILE); y++) {
 
 // Trees (decorative)
 const trees = [];
-for (let i = 0; i < 120; i++) {
+for (let i = 0; i < 160; i++) {
   let tx = Math.random() * WORLD_W;
   let ty = Math.random() * WORLD_H;
   // Don't place trees too close to company zones or center
@@ -465,7 +563,7 @@ for (let i = 0; i < 120; i++) {
 
 // Flowers
 const flowers = [];
-for (let i = 0; i < 200; i++) {
+for (let i = 0; i < 280; i++) {
   flowers.push({
     x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
     color: ['#f472b6','#fbbf24','#60a5fa','#a78bfa','#fb923c','#4ade80'][Math.floor(Math.random()*6)],
@@ -487,6 +585,7 @@ addPath(cx, cy, companies.sofi.x, companies.sofi.y);
 addPath(cx, cy, companies.shopify.x, companies.shopify.y);
 addPath(cx, cy, companies.remitly.x, companies.remitly.y);
 addPath(cx, cy, companies.lemonade.x, companies.lemonade.y);
+addPath(cx, cy, companies.opendoor.x, companies.opendoor.y);
 
 // ===== PARTICLE SYSTEM =====
 const particles = [];
@@ -499,7 +598,7 @@ function spawnParticle(x, y, color, life) {
 
 // Ambient floating particles
 const ambientParticles = [];
-for (let i = 0; i < 60; i++) {
+for (let i = 0; i < 80; i++) {
   ambientParticles.push({
     x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
     vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3,
@@ -510,27 +609,28 @@ for (let i = 0; i < 60; i++) {
 
 // ===== NPC DATA =====
 const zombieInvestors = [
-  { x: 600, y: 400, quote: "I put my life savings into DogeBonk at the top... it was supposed to be the next Doge...", phase: Math.random()*Math.PI*2 },
-  { x: 2800, y: 400, quote: "Diamond hands they said... my portfolio is down 94% but I'm still holding!", phase: Math.random()*Math.PI*2 },
-  { x: 500, y: 1600, quote: "I leveraged 50x on a memecoin called SafeElonMars... it was not safe.", phase: Math.random()*Math.PI*2 },
-  { x: 3100, y: 1600, quote: "Sold my car to buy NFTs of pixelated rocks... they're worth $3 now.", phase: Math.random()*Math.PI*2 },
-  { x: 1200, y: 1000, quote: "I followed a TikTok trader's advice and shorted the S&P 500... with my rent money.", phase: Math.random()*Math.PI*2 },
-  { x: 2400, y: 1000, quote: "My uncle told me to YOLO into a penny stock. He's also broke now.", phase: Math.random()*Math.PI*2 },
-  { x: 1000, y: 1800, quote: "I tried to time the market 47 times last year. Lost money 46 of those times.", phase: Math.random()*Math.PI*2 },
-  { x: 2600, y: 1800, quote: "Bought the dip. Then bought the dip of the dip. Then it dipped more. Send help.", phase: Math.random()*Math.PI*2 },
+  { x: 700, y: 500, quote: "I put my life savings into DogeBonk at the top... it was supposed to be the next Doge...", phase: Math.random()*Math.PI*2 },
+  { x: 3300, y: 500, quote: "Diamond hands they said... my portfolio is down 94% but I'm still holding!", phase: Math.random()*Math.PI*2 },
+  { x: 600, y: 1900, quote: "I leveraged 50x on a memecoin called SafeElonMars... it was not safe.", phase: Math.random()*Math.PI*2 },
+  { x: 3600, y: 1900, quote: "Sold my car to buy NFTs of pixelated rocks... they're worth $3 now.", phase: Math.random()*Math.PI*2 },
+  { x: 1400, y: 1200, quote: "I followed a TikTok trader's advice and shorted the S&P 500... with my rent money.", phase: Math.random()*Math.PI*2 },
+  { x: 2800, y: 1200, quote: "My uncle told me to YOLO into a penny stock. He's also broke now.", phase: Math.random()*Math.PI*2 },
+  { x: 1100, y: 2100, quote: "I tried to time the market 47 times last year. Lost money 46 of those times.", phase: Math.random()*Math.PI*2 },
+  { x: 3000, y: 2100, quote: "Bought the dip. Then bought the dip of the dip. Then it dipped more. Send help.", phase: Math.random()*Math.PI*2 },
 ];
 zombieInvestors.forEach(z => { z.dir = Math.floor(Math.random()*4); z.wobble = Math.random()*Math.PI*2; });
 
 const famousInvestors = [
-  { x: 1500, y: 1100, name: 'Warren Buffett', quote: "Be fearful when others are greedy, and greedy when others are fearful.", title: 'CEO, Berkshire Hathaway', suitColor: '#1e3a5f', hairColor: '#d1d5db', phase: 0 },
-  { x: 2100, y: 1100, name: 'Peter Lynch', quote: "Know what you own, and know why you own it.", title: 'Former Manager, Magellan Fund', suitColor: '#374151', hairColor: '#78716c', phase: 1 },
-  { x: 1800, y: 800, name: 'Cathie Wood', quote: "Innovation is key. We are investing in the future, not the past.", title: 'CEO, ARK Invest', suitColor: '#4c1d95', hairColor: '#f5f0e1', phase: 2 },
-  { x: 1800, y: 1500, name: 'Charlie Munger', quote: "The big money is not in the buying and the selling, but in the waiting.", title: 'Late Vice Chairman, Berkshire', suitColor: '#1f2937', hairColor: '#e5e7eb', phase: 3 },
+  { x: 1800, y: 1250, name: 'Warren Buffett', quote: "Be fearful when others are greedy, and greedy when others are fearful.", title: 'CEO, Berkshire Hathaway', suitColor: '#1e3a5f', hairColor: '#d1d5db', phase: 0 },
+  { x: 2400, y: 1250, name: 'Peter Lynch', quote: "Know what you own, and know why you own it.", title: 'Former Manager, Magellan Fund', suitColor: '#374151', hairColor: '#78716c', phase: 1 },
+  { x: 2100, y: 1000, name: 'Cathie Wood', quote: "Innovation is key. We are investing in the future, not the past.", title: 'CEO, ARK Invest', suitColor: '#4c1d95', hairColor: '#f5f0e1', phase: 2, isWoman: true },
+  { x: 2100, y: 1650, name: 'Charlie Munger', quote: "The big money is not in the buying and the selling, but in the waiting.", title: 'Late Vice Chairman, Berkshire', suitColor: '#1f2937', hairColor: '#e5e7eb', phase: 3 },
 ];
 
 let activeNpcDialogue = null;
 let nearestHub = null;
 let hubPanelActive = false;
+let celebrationTriggered = false;
 
 // ===== CHARACTER =====
 const player = {
@@ -582,10 +682,10 @@ document.getElementById('disc-total').textContent = allDataPoints.length;
 // ===== DRAWING FUNCTIONS =====
 
 function drawGround(time) {
-  // Sky gradient
+  // Sky gradient - bright cheerful blue
   const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  skyGrad.addColorStop(0, '#0f172a');
-  skyGrad.addColorStop(1, '#1e293b');
+  skyGrad.addColorStop(0, '#1a2744');
+  skyGrad.addColorStop(1, '#2a3f5f');
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -599,14 +699,14 @@ function drawGround(time) {
       const sx = col * TILE - camera.x;
       const sy = row * TILE - camera.y;
       const v = grassMap[row]?.[col] || 0;
-      const g = Math.floor(28 + v * 15);
-      const b = Math.floor(22 + v * 8);
-      ctx.fillStyle = `rgb(${Math.floor(15 + v*5)},${g},${b})`;
+      const g = Math.floor(45 + v * 25);
+      const b = Math.floor(30 + v * 12);
+      ctx.fillStyle = `rgb(${Math.floor(22 + v*10)},${g},${b})`;
       ctx.fillRect(sx, sy, TILE + 1, TILE + 1);
 
-      // Subtle grass detail
+      // Brighter grass detail
       if (v > 0.7) {
-        ctx.fillStyle = `rgba(80,160,80,0.15)`;
+        ctx.fillStyle = `rgba(100,200,100,0.2)`;
         ctx.fillRect(sx + TILE*0.3, sy + TILE*0.4, 2, 6);
         ctx.fillRect(sx + TILE*0.6, sy + TILE*0.2, 2, 5);
       }
@@ -618,11 +718,11 @@ function drawPaths() {
   for (const p of paths) {
     const sx = p.x - camera.x, sy = p.y - camera.y;
     if (sx < -30 || sx > canvas.width+30 || sy < -30 || sy > canvas.height+30) continue;
-    ctx.fillStyle = 'rgba(120,110,90,0.35)';
+    ctx.fillStyle = 'rgba(140,130,100,0.4)';
     ctx.beginPath();
     ctx.arc(sx, sy, 18, 0, Math.PI*2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(140,130,100,0.15)';
+    ctx.fillStyle = 'rgba(160,150,120,0.2)';
     ctx.beginPath();
     ctx.arc(sx, sy, 14, 0, Math.PI*2);
     ctx.fill();
@@ -645,16 +745,16 @@ function drawTree(tree, time) {
   ctx.fillStyle = '#5c3d2e';
   ctx.fillRect(sx - 4, sy - tree.size * 0.5, 8, tree.size * 0.8);
 
-  // Canopy
-  ctx.fillStyle = '#1a5c2a';
+  // Canopy - brighter greens
+  ctx.fillStyle = '#228b3a';
   ctx.beginPath();
   ctx.arc(sx + sway, sy - tree.size * 0.6, tree.size * 0.55, 0, Math.PI*2);
   ctx.fill();
-  ctx.fillStyle = '#227a38';
+  ctx.fillStyle = '#2ea84a';
   ctx.beginPath();
   ctx.arc(sx + sway - 5, sy - tree.size * 0.7, tree.size * 0.4, 0, Math.PI*2);
   ctx.fill();
-  ctx.fillStyle = '#2d9a48';
+  ctx.fillStyle = '#40c463';
   ctx.beginPath();
   ctx.arc(sx + sway + 6, sy - tree.size * 0.75, tree.size * 0.3, 0, Math.PI*2);
   ctx.fill();
@@ -665,7 +765,7 @@ function drawFlower(flower, time) {
   if (sx < -10 || sx > canvas.width+10 || sy < -10 || sy > canvas.height+10) return;
   const s = flower.size + Math.sin(time*0.003 + flower.phase)*0.5;
   ctx.fillStyle = flower.color;
-  ctx.globalAlpha = 0.6;
+  ctx.globalAlpha = 0.8;
   ctx.beginPath();
   ctx.arc(sx, sy, s, 0, Math.PI*2);
   ctx.fill();
@@ -1178,97 +1278,210 @@ function drawFamousInvestor(investor, time) {
   ctx.save();
   ctx.translate(sx, sy + idle);
 
-  // Legs (dress pants)
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(-5, 4, 5, 14);
-  ctx.fillRect(1, 4, 5, 14);
-  // Shoes
-  ctx.fillStyle = '#111';
-  ctx.fillRect(-6, 16, 6, 3);
-  ctx.fillRect(1, 16, 6, 3);
+  if (investor.isWoman) {
+    // === WOMAN CHARACTER (e.g. Cathie Wood) ===
+    // Legs (skirt + legs)
+    ctx.fillStyle = investor.suitColor;
+    ctx.beginPath();
+    ctx.moveTo(-12, 2);
+    ctx.lineTo(12, 2);
+    ctx.lineTo(10, 12);
+    ctx.lineTo(-10, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#f5c6a0';
+    ctx.fillRect(-4, 11, 4, 8);
+    ctx.fillRect(1, 11, 4, 8);
+    // Shoes (heels)
+    ctx.fillStyle = '#333';
+    ctx.fillRect(-5, 17, 5, 3);
+    ctx.fillRect(1, 17, 5, 3);
 
-  // Body (suit jacket)
-  ctx.fillStyle = investor.suitColor;
-  ctx.beginPath();
-  ctx.roundRect(-10, -10, 20, 18, 3);
-  ctx.fill();
-  // Suit lapels
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
-  ctx.beginPath();
-  ctx.moveTo(-4, -10);
-  ctx.lineTo(0, -2);
-  ctx.lineTo(4, -10);
-  ctx.closePath();
-  ctx.fill();
-  // Tie
-  ctx.fillStyle = '#b91c1c';
-  ctx.fillRect(-2, -8, 4, 12);
-  ctx.beginPath();
-  ctx.moveTo(-3, 4);
-  ctx.lineTo(0, 7);
-  ctx.lineTo(3, 4);
-  ctx.closePath();
-  ctx.fill();
+    // Body (blouse/blazer)
+    ctx.fillStyle = investor.suitColor;
+    ctx.beginPath();
+    ctx.roundRect(-10, -10, 20, 16, 3);
+    ctx.fill();
+    // Neckline
+    ctx.fillStyle = '#f5c6a0';
+    ctx.beginPath();
+    ctx.moveTo(-5, -10);
+    ctx.quadraticCurveTo(0, -5, 5, -10);
+    ctx.closePath();
+    ctx.fill();
+    // Necklace
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, -7, 4, 0.3, Math.PI - 0.3);
+    ctx.stroke();
 
-  // Arms (at sides, distinguished)
-  ctx.fillStyle = investor.suitColor;
-  ctx.fillRect(-14, -8, 5, 14);
-  ctx.fillRect(9, -8, 5, 14);
-  // Hands
-  ctx.fillStyle = '#f5c6a0';
-  ctx.fillRect(-13, 5, 4, 4);
-  ctx.fillRect(10, 5, 4, 4);
+    // Arms
+    ctx.fillStyle = investor.suitColor;
+    ctx.fillRect(-14, -8, 5, 12);
+    ctx.fillRect(9, -8, 5, 12);
+    ctx.fillStyle = '#f5c6a0';
+    ctx.fillRect(-13, 3, 4, 4);
+    ctx.fillRect(10, 3, 4, 4);
 
-  // Head
-  ctx.fillStyle = '#f5c6a0';
-  ctx.beginPath();
-  ctx.ellipse(0, -22, 10, 12, 0, 0, Math.PI*2);
-  ctx.fill();
+    // Head
+    ctx.fillStyle = '#f5c6a0';
+    ctx.beginPath();
+    ctx.ellipse(0, -22, 10, 12, 0, 0, Math.PI*2);
+    ctx.fill();
 
-  // Hair
-  ctx.fillStyle = investor.hairColor;
-  ctx.beginPath();
-  ctx.ellipse(0, -28, 11, 7, 0, Math.PI, Math.PI*2);
-  ctx.fill();
-  ctx.fillRect(-11, -28, 3, 6);
-  ctx.fillRect(8, -28, 3, 6);
+    // Long hair
+    ctx.fillStyle = investor.hairColor;
+    ctx.beginPath();
+    ctx.ellipse(0, -28, 12, 8, 0, Math.PI, Math.PI*2);
+    ctx.fill();
+    // Hair sides flowing down
+    ctx.fillRect(-12, -28, 4, 18);
+    ctx.fillRect(8, -28, 4, 18);
+    // Hair tips curving out
+    ctx.beginPath();
+    ctx.arc(-10, -10, 4, -Math.PI/2, Math.PI/2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(10, -10, 4, Math.PI/2, -Math.PI/2, true);
+    ctx.fill();
 
-  // Glasses (for distinction)
-  ctx.strokeStyle = 'rgba(200,200,200,0.6)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(-4, -23, 4, 0, Math.PI*2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(4, -23, 4, 0, Math.PI*2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(0, -23);
-  ctx.lineTo(0, -23);
-  ctx.stroke();
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(-4, -23, 2.5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(4, -23, 2.5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#2d4a1e';
+    ctx.beginPath();
+    ctx.arc(-4, -23, 1.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(4, -23, 1.5, 0, Math.PI*2);
+    ctx.fill();
+    // Eye lashes
+    ctx.strokeStyle = '#3d2314';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-6.5, -25.5);
+    ctx.lineTo(-5.5, -27);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-3, -25.5);
+    ctx.lineTo(-3.5, -27);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(2.5, -25.5);
+    ctx.lineTo(2, -27);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(6, -25.5);
+    ctx.lineTo(5, -27);
+    ctx.stroke();
 
-  // Eyes
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.ellipse(-4, -23, 2.5, 3, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(4, -23, 2.5, 3, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = '#2d1810';
-  ctx.beginPath();
-  ctx.arc(-4, -23, 1.5, 0, Math.PI*2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(4, -23, 1.5, 0, Math.PI*2);
-  ctx.fill();
+    // Lipstick smile
+    ctx.strokeStyle = '#e84393';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, -18, 3.5, 0.2, Math.PI - 0.2);
+    ctx.stroke();
 
-  // Friendly smile
-  ctx.strokeStyle = '#c9826a';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.arc(0, -18, 3.5, 0.2, Math.PI - 0.2);
-  ctx.stroke();
+  } else {
+    // === MALE CHARACTER ===
+    // Legs (dress pants)
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(-5, 4, 5, 14);
+    ctx.fillRect(1, 4, 5, 14);
+    // Shoes
+    ctx.fillStyle = '#111';
+    ctx.fillRect(-6, 16, 6, 3);
+    ctx.fillRect(1, 16, 6, 3);
+
+    // Body (suit jacket)
+    ctx.fillStyle = investor.suitColor;
+    ctx.beginPath();
+    ctx.roundRect(-10, -10, 20, 18, 3);
+    ctx.fill();
+    // Suit lapels
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.beginPath();
+    ctx.moveTo(-4, -10);
+    ctx.lineTo(0, -2);
+    ctx.lineTo(4, -10);
+    ctx.closePath();
+    ctx.fill();
+    // Tie
+    ctx.fillStyle = '#b91c1c';
+    ctx.fillRect(-2, -8, 4, 12);
+    ctx.beginPath();
+    ctx.moveTo(-3, 4);
+    ctx.lineTo(0, 7);
+    ctx.lineTo(3, 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Arms (at sides, distinguished)
+    ctx.fillStyle = investor.suitColor;
+    ctx.fillRect(-14, -8, 5, 14);
+    ctx.fillRect(9, -8, 5, 14);
+    // Hands
+    ctx.fillStyle = '#f5c6a0';
+    ctx.fillRect(-13, 5, 4, 4);
+    ctx.fillRect(10, 5, 4, 4);
+
+    // Head
+    ctx.fillStyle = '#f5c6a0';
+    ctx.beginPath();
+    ctx.ellipse(0, -22, 10, 12, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = investor.hairColor;
+    ctx.beginPath();
+    ctx.ellipse(0, -28, 11, 7, 0, Math.PI, Math.PI*2);
+    ctx.fill();
+    ctx.fillRect(-11, -28, 3, 6);
+    ctx.fillRect(8, -28, 3, 6);
+
+    // Glasses (for distinction)
+    ctx.strokeStyle = 'rgba(200,200,200,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(-4, -23, 4, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(4, -23, 4, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -23);
+    ctx.lineTo(0, -23);
+    ctx.stroke();
+
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(-4, -23, 2.5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(4, -23, 2.5, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#2d1810';
+    ctx.beginPath();
+    ctx.arc(-4, -23, 1.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(4, -23, 1.5, 0, Math.PI*2);
+    ctx.fill();
+
+    // Friendly smile
+    ctx.strokeStyle = '#c9826a';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(0, -18, 3.5, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  }
 
   ctx.restore();
 
@@ -1329,6 +1542,7 @@ function drawCenterHub(time) {
     { label: 'Shopify', color: companies.shopify.color, angle: -Math.PI/2 },
     { label: 'Remitly', color: companies.remitly.color, angle: Math.PI },
     { label: 'Lemonade', color: companies.lemonade.color, angle: 0 },
+    { label: 'Opendoor', color: companies.opendoor.color, angle: Math.PI/4 + Math.PI/8 },
   ];
   for (const sign of signs) {
     const signX = sx + Math.cos(sign.angle) * 100;
@@ -1382,8 +1596,8 @@ function drawParticles(time) {
     if (p.y > WORLD_H) p.y = 0;
     const sx = p.x - camera.x, sy = p.y - camera.y;
     if (sx < -10 || sx > canvas.width+10 || sy < -10 || sy > canvas.height+10) continue;
-    const a = 0.15 + Math.sin(p.phase) * 0.1;
-    ctx.fillStyle = `rgba(200,220,255,${a})`;
+    const a = 0.25 + Math.sin(p.phase) * 0.15;
+    ctx.fillStyle = `rgba(220,240,255,${a})`;
     ctx.beginPath();
     ctx.arc(sx, sy, p.size, 0, Math.PI*2);
     ctx.fill();
@@ -1391,7 +1605,7 @@ function drawParticles(time) {
 }
 
 function drawMinimap() {
-  mmCtx.fillStyle = '#0f172a';
+  mmCtx.fillStyle = '#1a2744';
   mmCtx.fillRect(0, 0, 180, 120);
 
   const scaleX = 180 / WORLD_W;
@@ -1637,6 +1851,7 @@ function gameLoop(time) {
           <h2 style="color:${nearestHub.color}">${nearestHub.name}</h2>
           <div class="subtitle">${nearestHub.ticker} - Quarterly Overview</div>
           <div class="highlight" style="background:${nearestHub.colorBg}; border-left: 3px solid ${nearestHub.color}; margin-top: 0;">${nearestHub.summary}</div>
+          ${nearestHub.earningsUrl ? `<a href="${nearestHub.earningsUrl}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:14px;padding:8px 16px;background:${nearestHub.colorBg};border:1px solid ${nearestHub.color};border-radius:8px;color:${nearestHub.colorLight};text-decoration:none;font-size:13px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">View Q4 2025 Earnings Report &rarr;</a>` : ''}
           <div class="prompt">Walk away to close</div>
         `;
         panel.innerHTML = html;
@@ -1664,7 +1879,7 @@ function gameLoop(time) {
         npcDialogue.querySelector('.npc-name').textContent = 'Zombie Retail Investor';
         npcDialogue.querySelector('.npc-name').style.color = '#8aaa7a';
         npcDialogue.querySelector('.npc-quote').textContent = `"${z.quote}"`;
-        npcDialogue.querySelector('.npc-label').textContent = 'Lost everything on meme stocks';
+        npcDialogue.querySelector('.npc-label').textContent = 'Retail Investor';
       }
       npcDialogue.classList.add('visible');
       foundNpc = true;
@@ -1740,26 +1955,78 @@ function gameLoop(time) {
     canvas.width/2, canvas.height/2, canvas.height * 0.9
   );
   vigGrad.addColorStop(0, 'transparent');
-  vigGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+  vigGrad.addColorStop(1, 'rgba(0,0,0,0.2)');
   ctx.fillStyle = vigGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // Minimap
   drawMinimap();
 
-  // Check if all discovered
-  if (discovered.size === allDataPoints.length) {
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
-    ctx.fillStyle = '#4ade80';
-    ctx.font = 'bold 16px "Segoe UI", system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('All earnings data discovered! You explored everything!', canvas.width/2, canvas.height - 22);
-    ctx.textAlign = 'left';
+  // Check if all discovered - celebration!
+  if (discovered.size === allDataPoints.length && !celebrationTriggered) {
+    celebrationTriggered = true;
+    document.getElementById('celebration-overlay').classList.add('visible');
+    // Spawn tons of confetti particles
+    for (let i = 0; i < 80; i++) {
+      spawnParticle(
+        player.x + (Math.random()-0.5)*200,
+        player.y + (Math.random()-0.5)*200,
+        ['#fbbf24','#f472b6','#60a5fa','#4ade80','#a78bfa','#fb923c'][Math.floor(Math.random()*6)],
+        120 + Math.random()*60
+      );
+    }
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      document.getElementById('celebration-overlay').classList.remove('visible');
+    }, 5000);
+  }
+  // Draw confetti on canvas while celebration is active
+  if (celebrationTriggered) {
+    const celebTime = time * 0.001;
+    for (let i = 0; i < 20; i++) {
+      const cx2 = (Math.sin(celebTime * 0.7 + i * 1.3) * 0.5 + 0.5) * canvas.width;
+      const cy2 = ((celebTime * 30 + i * 50) % (canvas.height + 20)) - 10;
+      const confettiColor = ['#fbbf24','#f472b6','#60a5fa','#4ade80','#a78bfa'][i % 5];
+      ctx.fillStyle = confettiColor;
+      ctx.globalAlpha = 0.6;
+      ctx.save();
+      ctx.translate(cx2, cy2);
+      ctx.rotate(celebTime + i);
+      ctx.fillRect(-3, -6, 6, 12);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   }
 
   requestAnimationFrame(gameLoop);
 }
+
+// ===== MUSIC =====
+const bgMusic = document.getElementById('bg-music');
+bgMusic.volume = 0.3;
+let musicStarted = false;
+let musicMuted = false;
+const muteBtn = document.getElementById('mute-btn');
+
+function tryStartMusic() {
+  if (!musicStarted) {
+    bgMusic.play().then(() => {
+      musicStarted = true;
+      window.removeEventListener('keydown', tryStartMusic);
+      window.removeEventListener('click', tryStartMusic);
+    }).catch(() => {});
+  }
+}
+
+// Start music on first interaction
+window.addEventListener('keydown', tryStartMusic);
+window.addEventListener('click', tryStartMusic);
+
+muteBtn.addEventListener('click', () => {
+  musicMuted = !musicMuted;
+  bgMusic.muted = musicMuted;
+  muteBtn.textContent = musicMuted ? '\u{1f507}' : '\u{1f50a}';
+});
 
 requestAnimationFrame(gameLoop);
 </script>
