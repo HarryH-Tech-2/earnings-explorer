@@ -201,6 +201,10 @@
       <div class="key" style="width:80px;font-size:11px;">SPACE</div>
       <div style="font-size:10px;color:#888;">Jump</div>
     </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:flex-end;">
+      <div class="key" style="width:80px;font-size:11px;">SHIFT</div>
+      <div style="font-size:10px;color:#888;">Sprint</div>
+    </div>
   </div>
   <p>Walk near <strong style="color:#fbbf24">glowing beacons</strong> to reveal data. Approach buildings for company overviews. Talk to NPCs!</p>
   <div class="start-text">Press any WASD key to begin</div>
@@ -639,6 +643,7 @@ const player = {
   dir: 0, // 0=down,1=left,2=up,3=right
   frame: 0, frameTimer: 0,
   speed: 3.5,
+  sprintSpeed: 5.5,
   moving: false,
   bobPhase: 0,
   jumpZ: 0,
@@ -1737,11 +1742,12 @@ function gameLoop(time) {
   if (player.moving) {
     const len = Math.sqrt(dx*dx + dy*dy);
     dx /= len; dy /= len;
+    const curSpeed = keys['shift'] ? player.sprintSpeed : player.speed;
 
     // Check for tree collisions
     let blocked = false;
-    const nx = player.x + dx * player.speed;
-    const ny = player.y + dy * player.speed;
+    const nx = player.x + dx * curSpeed;
+    const ny = player.y + dy * curSpeed;
     for (const tree of trees) {
       if (Math.hypot(nx - tree.x, ny - tree.y) < 18) {
         blocked = true;
@@ -1768,12 +1774,12 @@ function gameLoop(time) {
     }
 
     if (!blocked) {
-      player.x += dx * player.speed;
-      player.y += dy * player.speed;
+      player.x += dx * curSpeed;
+      player.y += dy * curSpeed;
     }
     player.x = Math.max(BORDER, Math.min(WORLD_W - BORDER, player.x));
     player.y = Math.max(BORDER, Math.min(WORLD_H - BORDER, player.y));
-    player.bobPhase += 0.2;
+    player.bobPhase += keys['shift'] ? 0.3 : 0.2;
     player.frameTimer++;
     if (player.frameTimer > 8) { player.frame = (player.frame + 1) % 4; player.frameTimer = 0; }
   }
