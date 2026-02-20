@@ -129,19 +129,22 @@
 
   #hub-prompt {
     position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-    background: rgba(10,10,30,0.85); border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 8px; padding: 6px 16px; color: #fff; font-size: 12px;
+    background: rgba(10,10,30,0.9); border: 1px solid rgba(251,191,36,0.4);
+    border-radius: 10px; padding: 10px 24px; color: #fff; font-size: 15px;
+    font-weight: 600; letter-spacing: 0.5px;
     backdrop-filter: blur(10px); z-index: 10; pointer-events: none;
     opacity: 0; transition: opacity 0.3s;
+    box-shadow: 0 0 20px rgba(251,191,36,0.15);
   }
-  #hub-prompt.visible { opacity: 1; }
+  #hub-prompt.visible { opacity: 1; animation: hubPulse 2s ease-in-out infinite; }
+  @keyframes hubPulse { 0%,100% { box-shadow: 0 0 20px rgba(251,191,36,0.15); } 50% { box-shadow: 0 0 30px rgba(251,191,36,0.3); } }
 
   #disclaimer {
     position: fixed; bottom: 16px; left: 16px;
     background: rgba(10,10,30,0.75); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px; padding: 5px 10px; color: #666; font-size: 9px;
-    backdrop-filter: blur(10px); z-index: 10; max-width: 280px;
-    line-height: 1.4; pointer-events: none;
+    border-radius: 6px; padding: 6px 12px; color: #777; font-size: 11px;
+    backdrop-filter: blur(10px); z-index: 10; max-width: 320px;
+    line-height: 1.5; pointer-events: none;
   }
 
   #celebration-overlay {
@@ -1828,35 +1831,34 @@ function gameLoop(time) {
     dx /= len; dy /= len;
     const curSpeed = keys['shift'] ? player.sprintSpeed : player.speed;
 
-    // Check for tree collisions
+    // Check for collisions (super jump lets you clear trees & characters)
     let blocked = false;
     const nx = player.x + dx * curSpeed;
     const ny = player.y + dy * curSpeed;
-    for (const tree of trees) {
-      if (Math.hypot(nx - tree.x, ny - tree.y) < 18) {
-        blocked = true;
-        break;
+    const airborne = superJumpActive && player.jumpZ < -20;
+    if (!airborne) {
+      for (const tree of trees) {
+        if (Math.hypot(nx - tree.x, ny - tree.y) < 18) { blocked = true; break; }
       }
     }
-    // Check for building collisions
+    // Buildings always block (can't jump over buildings)
     for (const comp of Object.values(companies)) {
       if (Math.abs(nx - comp.x) < 55 && Math.abs(ny - comp.y) < 45) {
         blocked = true;
         break;
       }
     }
-    // Check for NPC collisions
-    if (!blocked) {
+    if (!airborne && !blocked) {
       for (const z of zombieInvestors) {
         if (Math.hypot(nx - z.x, ny - z.y) < 20) { blocked = true; break; }
       }
     }
-    if (!blocked) {
+    if (!airborne && !blocked) {
       for (const inv of famousInvestors) {
         if (Math.hypot(nx - inv.x, ny - inv.y) < 20) { blocked = true; break; }
       }
     }
-    if (!blocked) {
+    if (!airborne && !blocked) {
       for (const hnpc of hiddenNpcs) {
         if (Math.hypot(nx - hnpc.x, ny - hnpc.y) < 20) { blocked = true; break; }
       }
