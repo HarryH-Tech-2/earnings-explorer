@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Earnings Explorer - Q4 & FY 2025</title>
-<meta name="description" content="Walk through a vibrant world and discover Q4 & FY 2025 earnings from SoFi, Shopify, Remitly, Lemonade, and Opendoor. An interactive earnings experience.">
+<meta name="description" content="Walk through a vibrant world and discover Q4 & FY 2025 earnings from 13 companies including SoFi, Shopify, ASML, Berkshire Hathaway, MercadoLibre, and more. Play 9 mini-games!">
 <meta property="og:title" content="Earnings Explorer - Q4 & FY 2025">
 <meta property="og:description" content="Walk through a vibrant world and discover the latest earnings from SoFi, Shopify, Remitly, Lemonade, and Opendoor. Talk to zombie retail investors and famous investors!">
 <meta property="og:image" content="https://harryh-tech-2.github.io/earnings-explorer/social-preview.png.svg">
@@ -269,7 +269,7 @@
 <div id="instructions">
   <h1>Earnings Explorer</h1>
   <div class="version">Q4 2025 & Full Year 2025</div>
-  <p>Walk through a vibrant world and discover the latest earnings from <strong>SoFi</strong>, <strong>Shopify</strong>, <strong>Remitly</strong>, <strong>Lemonade</strong>, and <strong>Opendoor</strong>. Visit the <strong style="color:#00d4aa">Shift4</strong> portal to enter Payment City!</p>
+  <p>Walk through a vibrant world and discover the latest earnings from <strong>SoFi</strong>, <strong>Shopify</strong>, <strong>Remitly</strong>, <strong>Lemonade</strong>, <strong>Opendoor</strong>, and more! Visit portals for <strong style="color:#00d4aa">Shift4</strong>, <strong style="color:#820ad1">Nu</strong>, <strong style="color:#0066cc">ASML</strong>, <strong style="color:#1e40af">Berkshire</strong>, <strong style="color:#ffe600">MercadoLibre</strong> and others to play mini-games!</p>
   <div class="keys">
     <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
       <div class="key">W</div>
@@ -288,7 +288,7 @@
       <div style="font-size:10px;color:#888;">Sprint</div>
     </div>
   </div>
-  <p>Walk near <strong style="color:#fbbf24">glowing beacons</strong> to reveal data. Approach buildings for company overviews. Talk to NPCs!</p>
+  <p>Walk near <strong style="color:#fbbf24">glowing beacons</strong> to reveal data. Approach buildings for overviews (<strong>E</strong>) or enter mini-games (<strong>F</strong>). Talk to NPCs!</p>
   <div class="start-text">Press any WASD key to begin</div>
 </div>
 
@@ -307,8 +307,8 @@ resize();
 window.addEventListener('resize', resize);
 
 // ===== CONSTANTS =====
-const WORLD_W = 4200;
-const WORLD_H = 2800;
+const WORLD_W = 8000;
+const WORLD_H = 5600;
 const TILE = 48;
 
 // ===== INPUT =====
@@ -323,6 +323,8 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     if (gameState === 'paymentCity') {
       if (!pcPlayer.isJumping) { pcPlayer.isJumping = true; pcPlayer.jumpVel = -9; }
+    } else if (gameState === 'miniGame') {
+      if (!mgPlayer.isJumping) { mgPlayer.isJumping = true; mgPlayer.jumpVel = -9; }
     } else if (!player.isJumping) {
       player.isJumping = true;
       player.jumpVel = superJumpActive ? -14 : -9;
@@ -650,11 +652,476 @@ const companies = {
         highlight: 'Cash rose to $962M. "Cash Plus" product now 35% of weekly volume. Oct cohort 50%+ already sold.'
       }
     ]
+  },
+  nu: {
+    name: 'Nu Holdings',
+    ticker: 'NU',
+    color: '#820ad1',
+    colorLight: '#a855f7',
+    colorDark: '#581c87',
+    colorBg: 'rgba(130,10,209,0.12)',
+    earningsUrl: 'https://international.nubank.com.br/company/investor-relations/',
+    x: 1000, y: 4400,
+    isPortal: true, miniGameKey: 'nuBank', portalLabel: 'Digital Bank City',
+    summary: 'Nu Holdings delivered a spectacular Q4 2025, becoming the most profitable digital bank in the Americas. Revenue reached $3.0B (+24% YoY FX-neutral) with net income of $553M. The platform now serves 114.2M customers (+18% YoY), with 92M in Brazil, 10.4M in Mexico, and 11.8M in Colombia. Monthly ARPAC hit $10.70 (+25% YoY). The cost-to-serve dropped to $0.70/customer, demonstrating incredible operating leverage. ROE reached 29%, rivaling traditional banks at a fraction of the cost base.',
+    dataPoints: [
+      {
+        title: 'Revenue & Income',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$3.0B', change: '+24% FXN', positive: true },
+          { label: 'FY 2025 Revenue', value: '$11.5B', change: '+35%', positive: true },
+          { label: 'Q4 Net Income', value: '$553M', change: '+87% YoY', positive: true },
+          { label: 'FY Net Income', value: '$1.97B', change: '+91%', positive: true },
+        ],
+        highlight: 'Revenue grew 24% FX-neutral in Q4. Net income nearly doubled year-over-year.'
+      },
+      {
+        title: 'Customer Growth',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Total Customers', value: '114.2M', change: '+18% YoY', positive: true },
+          { label: 'Brazil Customers', value: '92M', change: 'Market leader', positive: true },
+          { label: 'Mexico Customers', value: '10.4M', change: '+45% YoY', positive: true },
+          { label: 'Colombia Customers', value: '11.8M', change: 'Rapid growth', positive: true },
+        ],
+        highlight: '114M+ customers across 3 countries, making Nu the largest digital bank outside Asia.'
+      },
+      {
+        title: 'Unit Economics',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Monthly ARPAC', value: '$10.70', change: '+25% YoY', positive: true },
+          { label: 'Cost-to-Serve', value: '$0.70', change: 'Industry-low', positive: true },
+          { label: 'ROE', value: '29%', change: 'Bank-beating', positive: true },
+          { label: 'Efficiency Ratio', value: '31%', change: 'Best-in-class', positive: true },
+        ],
+        highlight: 'Cost-to-serve of $0.70 per customer enables massive operating leverage at scale.'
+      },
+      {
+        title: 'Products & Lending',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Credit Portfolio', value: '$20.4B', change: '+30% YoY', positive: true },
+          { label: 'Deposits', value: '$28.3B', change: '+40% YoY', positive: true },
+          { label: 'Activity Rate', value: '83%', change: 'Stable', positive: true },
+          { label: 'NPL (90d)', value: '7.0%', change: 'Controlled', positive: true },
+        ],
+        highlight: 'Credit portfolio grew 30% while maintaining disciplined risk management.'
+      }
+    ]
+  },
+  mama: {
+    name: "Mama's Creations",
+    ticker: 'MAMA',
+    color: '#e85d04',
+    colorLight: '#fb923c',
+    colorDark: '#9a3412',
+    colorBg: 'rgba(232,93,4,0.12)',
+    earningsUrl: 'https://ir.mamascreations.com/',
+    x: 2800, y: 4600,
+    isPortal: true, miniGameKey: 'deliEmpire', portalLabel: 'Deli Empire',
+    summary: "Mama's Creations delivered record Q4 FY2025 results, showcasing the power of its prepared deli foods platform. Revenue surged to $90.2M (+42% YoY) driven by the T. Marzetti acquisition integration and strong organic growth of 12%. Adjusted EBITDA reached $10.8M with 12% margins. The company now has products in over 18,000 retail locations across the US. Management guided FY2026 revenue of $330-350M with EBITDA margins expanding toward 14%.",
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$90.2M', change: '+42% YoY', positive: true },
+          { label: 'FY 2025 Revenue', value: '$289M', change: '+55%', positive: true },
+          { label: 'Organic Growth', value: '+12%', change: 'Accelerating', positive: true },
+          { label: 'FY 2026 Guidance', value: '$330-350M', change: '+14-21%', positive: true },
+        ],
+        highlight: 'Record quarterly revenue of $90.2M, driven by both acquisitions and organic growth.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Adj. EBITDA', value: '$10.8M', change: '+65% YoY', positive: true },
+          { label: 'EBITDA Margin', value: '12.0%', change: 'Expanding', positive: true },
+          { label: 'Q4 Gross Margin', value: '28.5%', change: '+180bps YoY', positive: true },
+          { label: 'Q4 Net Income', value: '$4.2M', change: 'vs. $1.8M', positive: true },
+        ],
+        highlight: 'EBITDA margins expanding as acquisition synergies kick in and scale grows.'
+      },
+      {
+        title: 'Distribution',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Retail Locations', value: '18,000+', change: '+3,000 YoY', positive: true },
+          { label: 'SKU Count', value: '85+', change: 'Growing', positive: true },
+          { label: 'Top Retailers', value: 'Costco, Walmart', change: 'National', positive: true },
+          { label: 'New Product Lines', value: '12', change: 'Launched FY25', positive: true },
+        ],
+        highlight: 'Now in over 18,000 retail locations including major national chains.'
+      },
+      {
+        title: 'Growth Strategy',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Acquisition Pipeline', value: 'Active', change: 'Multiple targets', positive: true },
+          { label: 'Manufacturing Capacity', value: '+40%', change: 'New facility', positive: true },
+          { label: 'Category Growth', value: 'Deli +8%', change: 'Industry trend', positive: true },
+          { label: 'Brand Awareness', value: 'Rising', change: 'TV/Digital ads', positive: true },
+        ],
+        highlight: "Mama's is consolidating the fragmented prepared foods market with a proven playbook."
+      }
+    ]
+  },
+  asml: {
+    name: 'ASML Holding',
+    ticker: 'ASML',
+    color: '#0066cc',
+    colorLight: '#3b82f6',
+    colorDark: '#1e3a8a',
+    colorBg: 'rgba(0,102,204,0.12)',
+    earningsUrl: 'https://www.asml.com/en/investors',
+    x: 5500, y: 1000,
+    isPortal: true, miniGameKey: 'chipFoundry', portalLabel: 'Chip Foundry',
+    summary: 'ASML delivered a record-breaking Q4 2025 with revenue of €9.3B, up 25% YoY. Full-year revenue reached €28.3B (+14%). The company booked €7.1B in new orders, driven by insatiable demand for EUV lithography systems from AI chip manufacturers. Gross margin hit 51.7%. ASML is the sole supplier of EUV machines, each costing $200M+, making it one of the most critical companies in the global semiconductor supply chain. 2026 guidance of €30-35B signals continued AI-driven momentum.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '€9.3B', change: '+25% YoY', positive: true },
+          { label: 'FY 2025 Revenue', value: '€28.3B', change: '+14%', positive: true },
+          { label: 'Q4 Net Bookings', value: '€7.1B', change: 'Strong', positive: true },
+          { label: '2026 Guidance', value: '€30-35B', change: '+6-24%', positive: true },
+        ],
+        highlight: 'Record Q4 revenue of €9.3B driven by massive AI chip demand for EUV systems.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Gross Margin', value: '51.7%', change: 'Above guide', positive: true },
+          { label: 'Q4 Net Income', value: '€2.7B', change: '+24%', positive: true },
+          { label: 'FY Gross Margin', value: '51.3%', change: 'Stable', positive: true },
+          { label: 'FY EPS', value: '€17.45', change: '+15%', positive: true },
+        ],
+        highlight: 'Gross margins above 51% reflect ASML\'s unrivaled monopoly position in EUV.'
+      },
+      {
+        title: 'Technology',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'EUV Systems Shipped', value: '55', change: '+12 YoY', positive: true },
+          { label: 'High-NA EUV', value: 'Ramping', change: 'First deliveries', positive: true },
+          { label: 'Installed Base Rev', value: '€6.1B', change: '+18%', positive: true },
+          { label: 'System ASP', value: '€200M+', change: 'EUV average', positive: true },
+        ],
+        highlight: 'High-NA EUV (next-gen $350M+ machines) beginning to ship to lead customers.'
+      },
+      {
+        title: 'Market Position',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'EUV Market Share', value: '100%', change: 'Monopoly', positive: true },
+          { label: 'Backlog', value: '€36B+', change: 'Years of demand', positive: true },
+          { label: 'R&D Spending', value: '€4.4B', change: '+12%', positive: true },
+          { label: 'Dividend + Buyback', value: '€5.6B', change: 'Returned FY25', positive: true },
+        ],
+        highlight: 'ASML holds a 100% monopoly on EUV lithography — the only company that can make these machines.'
+      }
+    ]
+  },
+  wise: {
+    name: 'Wise plc',
+    ticker: 'WISE',
+    color: '#9fe870',
+    colorLight: '#a3e635',
+    colorDark: '#4d7c0f',
+    colorBg: 'rgba(159,232,112,0.12)',
+    earningsUrl: 'https://wise.com/us/blog/investor-relations',
+    x: 7000, y: 1200,
+    isPortal: true, miniGameKey: 'transferHub', portalLabel: 'Transfer Hub',
+    summary: 'Wise delivered strong H2 FY2025 results with revenue of £530M (+19% YoY). Full-year revenue reached £1.01B, crossing the billion-pound milestone for the first time. Active customers grew to 12.8M (+22%). Cross-border volume hit £68B for the half (+20%). Wise now processes transfers across 40+ currencies at rates 6x cheaper than traditional banks. The Wise Platform (API for banks) is growing rapidly with 85+ partners including major banks embedding Wise infrastructure.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'H2 FY25 Revenue', value: '£530M', change: '+19% YoY', positive: true },
+          { label: 'FY 2025 Revenue', value: '£1.01B', change: '+21%', positive: true },
+          { label: 'Cross-Border Volume (H2)', value: '£68B', change: '+20%', positive: true },
+          { label: 'Take Rate', value: '0.63%', change: 'Stable', positive: true },
+        ],
+        highlight: 'First-ever billion-pound revenue year. Cross-border volume continues to accelerate.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'H2 Adj. EBITDA', value: '£165M', change: '31% margin', positive: true },
+          { label: 'FY Adj. EBITDA', value: '£320M', change: '+25%', positive: true },
+          { label: 'H2 Net Income', value: '£95M', change: '+22%', positive: true },
+          { label: 'Operating Leverage', value: 'Expanding', change: 'Scale benefits', positive: true },
+        ],
+        highlight: 'EBITDA margins above 30%, demonstrating powerful operating leverage at scale.'
+      },
+      {
+        title: 'Customers',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Active Customers', value: '12.8M', change: '+22% YoY', positive: true },
+          { label: 'Personal Customers', value: '11.2M', change: '+20%', positive: true },
+          { label: 'Business Customers', value: '1.6M', change: '+35%', positive: true },
+          { label: 'Customer Balances', value: '£12.8B', change: '+40%', positive: true },
+        ],
+        highlight: 'Business segment growing fastest at 35% YoY. Customer balances hit £12.8B.'
+      },
+      {
+        title: 'Platform & Expansion',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Wise Platform Partners', value: '85+', change: '+15 YoY', positive: true },
+          { label: 'Currencies Supported', value: '40+', change: 'Global reach', positive: true },
+          { label: 'Cost vs Banks', value: '6x cheaper', change: 'Advantage', positive: true },
+          { label: 'Wise Account Users', value: '5.2M', change: '+30%', positive: true },
+        ],
+        highlight: '85+ banks and fintechs now embed Wise infrastructure via the Wise Platform API.'
+      }
+    ]
+  },
+  berkshire: {
+    name: 'Berkshire Hathaway',
+    ticker: 'BRK.B',
+    color: '#1e40af',
+    colorLight: '#60a5fa',
+    colorDark: '#1e3a5f',
+    colorBg: 'rgba(30,64,175,0.12)',
+    earningsUrl: 'https://www.berkshirehathaway.com/reports.html',
+    x: 7200, y: 4800,
+    isPortal: true, miniGameKey: 'insuranceEmpire', portalLabel: 'Insurance Empire',
+    summary: 'Berkshire Hathaway reported record Q4 2025 operating earnings of $14.5B (+71% YoY), driven by exceptional insurance underwriting and investment income. Full-year operating earnings hit $47.4B. The cash hoard reached a staggering $334.2B after Buffett continued selling Apple and Bank of America. Insurance float grew to $173B. GEICO had a spectacular year with combined ratio of 87%. The stock hit all-time highs, with market cap surpassing $1.1T.',
+    dataPoints: [
+      {
+        title: 'Operating Earnings',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Operating Earnings', value: '$14.5B', change: '+71% YoY', positive: true },
+          { label: 'FY Operating Earnings', value: '$47.4B', change: '+27%', positive: true },
+          { label: 'Insurance Underwriting', value: '$3.4B', change: '+62%', positive: true },
+          { label: 'Investment Income', value: '$4.1B', change: '+50%', positive: true },
+        ],
+        highlight: 'Record quarterly operating earnings of $14.5B, driven by insurance excellence.'
+      },
+      {
+        title: 'Cash & Investments',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Cash Pile', value: '$334.2B', change: 'All-time high', positive: true },
+          { label: 'T-Bill Holdings', value: '$286B', change: 'Earning 5%+', positive: true },
+          { label: 'Apple Position', value: '~$75B', change: 'Reduced 75%', positive: false },
+          { label: 'Equity Portfolio', value: '$267B', change: 'Concentrated', positive: true },
+        ],
+        highlight: '$334B cash hoard earning 5%+ in T-bills. Buffett waiting for the right pitch.'
+      },
+      {
+        title: 'Insurance Empire',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Insurance Float', value: '$173B', change: '+$8B YoY', positive: true },
+          { label: 'GEICO Combined Ratio', value: '87%', change: 'Excellent', positive: true },
+          { label: 'BH Reinsurance', value: 'Record year', change: 'Market leader', positive: true },
+          { label: 'Written Premiums', value: '$82B', change: '+9%', positive: true },
+        ],
+        highlight: 'GEICO turnaround is complete. Combined ratio of 87% is best-in-class.'
+      },
+      {
+        title: 'Conglomerate',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Market Cap', value: '$1.1T', change: 'All-time high', positive: true },
+          { label: 'BNSF Earnings', value: '$5.3B', change: '+8%', positive: true },
+          { label: 'BHE (Energy)', value: '$3.7B', change: '+12%', positive: true },
+          { label: 'Share Buybacks', value: '$2.9B', change: 'FY 2025', positive: true },
+        ],
+        highlight: 'Market cap crossed $1.1 trillion. BNSF and BHE continue compounding steadily.'
+      }
+    ]
+  },
+  meli: {
+    name: 'MercadoLibre',
+    ticker: 'MELI',
+    color: '#ffe600',
+    colorLight: '#fef08a',
+    colorDark: '#a16207',
+    colorBg: 'rgba(255,230,0,0.12)',
+    earningsUrl: 'https://investor.mercadolibre.com/',
+    x: 5500, y: 4600,
+    isPortal: true, miniGameKey: 'marketplaceTown', portalLabel: 'Marketplace Town',
+    summary: 'MercadoLibre delivered a powerhouse Q4 2025 with revenue of $6.1B (+37% FXN), surpassing expectations. FY revenue hit $21.7B. GMV reached $14.8B in Q4 with 416M items sold. Mercado Pago (fintech) processed $56B in TPV. Unique buyers grew to 62M. The credit portfolio reached $6.3B (+48%). MELI Logistics delivered 85% of items within 48 hours. Net income of $640M reflected disciplined execution across all 18 Latin American markets.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$6.1B', change: '+37% FXN', positive: true },
+          { label: 'FY 2025 Revenue', value: '$21.7B', change: '+35%', positive: true },
+          { label: 'Commerce Revenue', value: '$3.5B', change: '+32%', positive: true },
+          { label: 'Fintech Revenue', value: '$2.6B', change: '+44%', positive: true },
+        ],
+        highlight: 'Revenue of $6.1B beat estimates. Fintech growing even faster than commerce.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Net Income', value: '$640M', change: '+28%', positive: true },
+          { label: 'Q4 Operating Income', value: '$890M', change: '+35%', positive: true },
+          { label: 'Operating Margin', value: '14.6%', change: 'Expanding', positive: true },
+          { label: 'FY Net Income', value: '$2.1B', change: '+42%', positive: true },
+        ],
+        highlight: 'Operating margins expanding even while MELI invests heavily in logistics and fintech.'
+      },
+      {
+        title: 'Commerce',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Q4 GMV', value: '$14.8B', change: '+29%', positive: true },
+          { label: 'Items Sold (Q4)', value: '416M', change: '+22%', positive: true },
+          { label: 'Unique Buyers', value: '62M', change: '+16%', positive: true },
+          { label: 'Delivery <48hrs', value: '85%', change: 'MELI Logistics', positive: true },
+        ],
+        highlight: '416M items sold in Q4 with 85% delivered within 48 hours via MELI Logistics.'
+      },
+      {
+        title: 'Fintech (Mercado Pago)',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Q4 TPV', value: '$56B', change: '+40%', positive: true },
+          { label: 'Credit Portfolio', value: '$6.3B', change: '+48%', positive: true },
+          { label: 'Pago Users', value: '56M', change: '+25%', positive: true },
+          { label: 'NPL (90d+)', value: '6.8%', change: 'Controlled', positive: true },
+        ],
+        highlight: 'Mercado Pago processed $56B in payments. Credit portfolio growing rapidly while NPLs stay controlled.'
+      }
+    ]
+  },
+  nbis: {
+    name: 'Nebius Group',
+    ticker: 'NBIS',
+    color: '#06b6d4',
+    colorLight: '#22d3ee',
+    colorDark: '#0e7490',
+    colorBg: 'rgba(6,182,212,0.12)',
+    earningsUrl: 'https://nebius.com/investors',
+    x: 2800, y: 800,
+    isPortal: true, miniGameKey: 'dataCenter', portalLabel: 'Data Center',
+    summary: 'Nebius Group (spun off from Yandex) delivered explosive Q4 2025 revenue of $120M (+400%+ YoY), driven by massive demand for AI cloud infrastructure. FY revenue reached $290M. The company operates one of Europe\'s largest GPU clusters with 25,000+ NVIDIA H100s. Nebius secured $2.3B in debt/equity financing. AI training workloads are booked out 6+ months. Annualized revenue run-rate exiting Q4 exceeded $700M. The company is rapidly expanding data centers in Finland, France, and the US.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$120M', change: '+400% YoY', positive: true },
+          { label: 'FY 2025 Revenue', value: '$290M', change: '+350%', positive: true },
+          { label: 'ARR (Exit Q4)', value: '$700M+', change: 'Accelerating', positive: true },
+          { label: '2026 Guidance', value: '$750M-1B', change: 'Massive growth', positive: true },
+        ],
+        highlight: 'Revenue growing 400%+ YoY as AI training demand overwhelms GPU supply.'
+      },
+      {
+        title: 'Infrastructure',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'GPU Fleet', value: '25,000+ H100s', change: 'Top-5 globally', positive: true },
+          { label: 'Data Centers', value: '4 locations', change: 'EU + US', positive: true },
+          { label: 'Utilization', value: '95%+', change: 'Near capacity', positive: true },
+          { label: 'Backlog', value: '6+ months', change: 'Booked out', positive: true },
+        ],
+        highlight: '25,000+ NVIDIA H100 GPUs at 95%+ utilization. Backlog extends 6+ months.'
+      },
+      {
+        title: 'Financials',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Capital Raised', value: '$2.3B', change: 'Well-funded', positive: true },
+          { label: 'Gross Margin', value: '35%', change: 'Improving', positive: true },
+          { label: 'CapEx (FY)', value: '$1.8B', change: 'GPU buildout', positive: true },
+          { label: 'Cash Position', value: '$1.4B', change: 'Strong', positive: true },
+        ],
+        highlight: '$2.3B raised to fund aggressive GPU cluster expansion across 3 continents.'
+      },
+      {
+        title: 'AI Platform',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Enterprise Clients', value: '120+', change: '+80 YoY', positive: true },
+          { label: 'AI Training Jobs', value: '50K+/month', change: 'Growing', positive: true },
+          { label: 'Toloka AI Data', value: '1M+ tasks/day', change: 'Training data', positive: true },
+          { label: 'TripleTen (EdTech)', value: '10K+ students', change: 'AI bootcamp', positive: true },
+        ],
+        highlight: '120+ enterprise clients running AI training workloads on Nebius GPU clusters.'
+      }
+    ]
+  },
+  pgy: {
+    name: 'Pagaya Technologies',
+    ticker: 'PGY',
+    color: '#10b981',
+    colorLight: '#34d399',
+    colorDark: '#047857',
+    colorBg: 'rgba(16,185,129,0.12)',
+    earningsUrl: 'https://investor.pagaya.com/',
+    x: 7200, y: 2600,
+    isPortal: true, miniGameKey: 'loanEngine', portalLabel: 'Loan Engine',
+    summary: 'Pagaya Technologies delivered record Q4 2025 results with revenue of $280M (+28% YoY). Network volume reached $2.8B as the AI-driven lending network expanded to 31 lending partners. FY revenue hit $1.02B, crossing $1B for the first time. The company\'s AI models analyze 10,000+ data points per application, enabling partners to approve 30% more borrowers at equal or better risk. Adjusted EBITDA of $42M reflected improving operating leverage. FRLPC (fee revenue less production costs) margins expanded to 4.2%.',
+    dataPoints: [
+      {
+        title: 'Revenue',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Q4 Revenue', value: '$280M', change: '+28% YoY', positive: true },
+          { label: 'FY 2025 Revenue', value: '$1.02B', change: '+25%', positive: true },
+          { label: 'Q4 Network Volume', value: '$2.8B', change: '+32%', positive: true },
+          { label: 'FY Network Volume', value: '$10.2B', change: '+30%', positive: true },
+        ],
+        highlight: 'First-ever $1B revenue year. Network volume of $10.2B reflects massive scale.'
+      },
+      {
+        title: 'Profitability',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Q4 Adj. EBITDA', value: '$42M', change: '+55%', positive: true },
+          { label: 'FRLPC Margin', value: '4.2%', change: '+60bps YoY', positive: true },
+          { label: 'Q4 Adj. Net Income', value: '$18M', change: 'vs. $(5)M', positive: true },
+          { label: 'FY Adj. EBITDA', value: '$135M', change: '+70%', positive: true },
+        ],
+        highlight: 'FRLPC margins expanding as AI models mature and scale drives operating leverage.'
+      },
+      {
+        title: 'AI Network',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Lending Partners', value: '31', change: '+8 YoY', positive: true },
+          { label: 'Data Points/Application', value: '10,000+', change: 'AI advantage', positive: true },
+          { label: 'Approval Rate Lift', value: '+30%', change: 'vs. traditional', positive: true },
+          { label: 'Applications Analyzed', value: '2.5M/month', change: '+25%', positive: true },
+        ],
+        highlight: "Pagaya's AI enables partners to approve 30% more borrowers at better risk profiles."
+      },
+      {
+        title: 'Products & Expansion',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Personal Loans', value: '$5.8B vol', change: 'Core product', positive: true },
+          { label: 'Auto Loans', value: '$2.1B vol', change: '+45%', positive: true },
+          { label: 'POS/BNPL', value: '$1.5B vol', change: 'New vertical', positive: true },
+          { label: 'Real Estate (Darwin)', value: '$0.8B vol', change: 'Scaling', positive: true },
+        ],
+        highlight: 'Expanding beyond personal loans into auto, POS/BNPL, and real estate verticals.'
+      }
+    ]
   }
 };
 
 // ===== GAME STATE =====
-let gameState = 'main'; // 'main' or 'paymentCity'
+let gameState = 'main'; // 'main', 'paymentCity', or 'miniGame'
+let activeMiniGameKey = null;
 
 // ===== SHIFT4 PORTAL HUB =====
 const shift4Hub = {
@@ -669,6 +1136,12 @@ const shift4Hub = {
   isPortal: true
 };
 
+// Collect all portal hubs (companies with isPortal + shift4)
+const allPortalHubs = [shift4Hub];
+for (const comp of Object.values(companies)) {
+  if (comp.isPortal) allPortalHubs.push(comp);
+}
+
 // ===== WORLD GENERATION =====
 // Pre-generate grass variation map
 const grassMap = [];
@@ -681,10 +1154,9 @@ for (let y = 0; y < Math.ceil(WORLD_H/TILE); y++) {
 
 // Trees (decorative)
 const trees = [];
-for (let i = 0; i < 160; i++) {
+for (let i = 0; i < 400; i++) {
   let tx = Math.random() * WORLD_W;
   let ty = Math.random() * WORLD_H;
-  // Don't place trees too close to company zones or center
   let tooClose = false;
   for (const c of Object.values(companies)) {
     if (Math.hypot(tx - c.x, ty - c.y) < 280) tooClose = true;
@@ -698,7 +1170,7 @@ for (let i = 0; i < 160; i++) {
 
 // Flowers
 const flowers = [];
-for (let i = 0; i < 280; i++) {
+for (let i = 0; i < 700; i++) {
   flowers.push({
     x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
     color: ['#f472b6','#fbbf24','#60a5fa','#a78bfa','#fb923c','#4ade80'][Math.floor(Math.random()*6)],
@@ -716,11 +1188,9 @@ function addPath(x1, y1, x2, y2) {
   }
 }
 const cx = WORLD_W/2, cy = WORLD_H/2;
-addPath(cx, cy, companies.sofi.x, companies.sofi.y);
-addPath(cx, cy, companies.shopify.x, companies.shopify.y);
-addPath(cx, cy, companies.remitly.x, companies.remitly.y);
-addPath(cx, cy, companies.lemonade.x, companies.lemonade.y);
-addPath(cx, cy, companies.opendoor.x, companies.opendoor.y);
+for (const comp of Object.values(companies)) {
+  addPath(cx, cy, comp.x, comp.y);
+}
 addPath(cx, cy, shift4Hub.x, shift4Hub.y);
 
 // ===== PARTICLE SYSTEM =====
@@ -734,7 +1204,7 @@ function spawnParticle(x, y, color, life) {
 
 // Ambient floating particles
 const ambientParticles = [];
-for (let i = 0; i < 80; i++) {
+for (let i = 0; i < 160; i++) {
   ambientParticles.push({
     x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
     vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3,
@@ -745,22 +1215,112 @@ for (let i = 0; i < 80; i++) {
 
 // ===== NPC DATA =====
 const zombieInvestors = [
-  { x: 700, y: 500, quote: "I put my life savings into DogeBonk at the top... it was supposed to be the next Doge...", phase: Math.random()*Math.PI*2 },
-  { x: 3300, y: 500, quote: "Diamond hands they said... my portfolio is down 94% but I'm still holding!", phase: Math.random()*Math.PI*2 },
-  { x: 600, y: 1900, quote: "I leveraged 50x on a memecoin called SafeElonMars... it was not safe.", phase: Math.random()*Math.PI*2 },
-  { x: 3600, y: 1900, quote: "Sold my car to buy NFTs of pixelated rocks... they're worth $3 now.", phase: Math.random()*Math.PI*2 },
-  { x: 1400, y: 1200, quote: "I followed a TikTok trader's advice and shorted the S&P 500... with my rent money.", phase: Math.random()*Math.PI*2 },
-  { x: 2800, y: 1200, quote: "My uncle told me to YOLO into a penny stock. He's also broke now.", phase: Math.random()*Math.PI*2 },
-  { x: 1100, y: 2100, quote: "I tried to time the market 47 times last year. Lost money 46 of those times.", phase: Math.random()*Math.PI*2 },
-  { x: 3000, y: 2100, quote: "Bought the dip. Then bought the dip of the dip. Then it dipped more. Send help.", phase: Math.random()*Math.PI*2 },
+  { x: 1200, y: 900, quote: "I put my life savings into DogeBonk at the top... it was supposed to be the next Doge...", phase: Math.random()*Math.PI*2 },
+  { x: 5800, y: 900, quote: "Diamond hands they said... my portfolio is down 94% but I'm still holding!", phase: Math.random()*Math.PI*2 },
+  { x: 1000, y: 3200, quote: "I leveraged 50x on a memecoin called SafeElonMars... it was not safe.", phase: Math.random()*Math.PI*2 },
+  { x: 6500, y: 3200, quote: "Sold my car to buy NFTs of pixelated rocks... they're worth $3 now.", phase: Math.random()*Math.PI*2 },
+  { x: 2600, y: 2000, quote: "I followed a TikTok trader's advice and shorted the S&P 500... with my rent money.", phase: Math.random()*Math.PI*2 },
+  { x: 5200, y: 2000, quote: "My uncle told me to YOLO into a penny stock. He's also broke now.", phase: Math.random()*Math.PI*2 },
+  { x: 2000, y: 3800, quote: "I tried to time the market 47 times last year. Lost money 46 of those times.", phase: Math.random()*Math.PI*2 },
+  { x: 5500, y: 3800, quote: "Bought the dip. Then bought the dip of the dip. Then it dipped more. Send help.", phase: Math.random()*Math.PI*2 },
+  { x: 3500, y: 4200, quote: "I bought a coin because the logo looked cool. Down 99%. Still love the logo though.", phase: Math.random()*Math.PI*2 },
+  { x: 6800, y: 1800, quote: "My trading bot made 47 trades in one day. All losses. But the code was beautiful.", phase: Math.random()*Math.PI*2 },
 ];
 zombieInvestors.forEach(z => { z.dir = Math.floor(Math.random()*4); z.wobble = Math.random()*Math.PI*2; });
 
 const famousInvestors = [
-  { x: 1800, y: 1250, name: 'Warren Buffett', quote: "Be fearful when others are greedy, and greedy when others are fearful.", title: 'CEO, Berkshire Hathaway', suitColor: '#1e3a5f', hairColor: '#d1d5db', phase: 0 },
-  { x: 2400, y: 1250, name: 'Peter Lynch', quote: "Know what you own, and know why you own it.", title: 'Former Manager, Magellan Fund', suitColor: '#374151', hairColor: '#78716c', phase: 1 },
-  { x: 2100, y: 1000, name: 'Cathie Wood', quote: "Innovation is key. We are investing in the future, not the past.", title: 'CEO, ARK Invest', suitColor: '#4c1d95', hairColor: '#f5f0e1', phase: 2, isWoman: true },
-  { x: 2100, y: 1650, name: 'Charlie Munger', quote: "The big money is not in the buying and the selling, but in the waiting.", title: 'Late Vice Chairman, Berkshire', suitColor: '#1f2937', hairColor: '#e5e7eb', phase: 3 },
+  { x: 3700, y: 2500, name: 'Warren Buffett', quote: "Be fearful when others are greedy, and greedy when others are fearful.", title: 'CEO, Berkshire Hathaway', suitColor: '#1e3a5f', hairColor: '#d1d5db', phase: 0 },
+  { x: 4300, y: 2500, name: 'Peter Lynch', quote: "Know what you own, and know why you own it.", title: 'Former Manager, Magellan Fund', suitColor: '#374151', hairColor: '#78716c', phase: 1 },
+  { x: 4000, y: 2200, name: 'Cathie Wood', quote: "Innovation is key. We are investing in the future, not the past.", title: 'CEO, ARK Invest', suitColor: '#4c1d95', hairColor: '#f5f0e1', phase: 2, isWoman: true },
+  { x: 4000, y: 3100, name: 'Charlie Munger', quote: "The big money is not in the buying and the selling, but in the waiting.", title: 'Late Vice Chairman, Berkshire', suitColor: '#1f2937', hairColor: '#e5e7eb', phase: 3 },
+];
+
+// ===== SUCCESSFUL RETAIL INVESTORS (Walking NPCs) =====
+const retailInvestors = [
+  {
+    x: 3000, y: 1800, homeX: 3000, homeY: 1800, patrolRadius: 300,
+    name: 'Sarah "The Researcher"',
+    quotes: [
+      "I read every 10-K before I invest. Boring? Maybe. Profitable? Absolutely.",
+      "DCA into quality companies for 15 years. That's my whole strategy. It works.",
+      "The best investment I ever made was spending 100 hours learning to read financial statements.",
+      "I don't need to beat the market. I just need to not do dumb things consistently."
+    ],
+    quoteIndex: 0,
+    title: 'Index Fund Investor, 340% Returns',
+    shirtColor: '#3b82f6', pantsColor: '#1e3a5f', hairColor: '#3d2314',
+    phase: 0, speed: 0.8, angle: 0, isWoman: true
+  },
+  {
+    x: 5000, y: 2800, homeX: 5000, homeY: 2800, patrolRadius: 350,
+    name: 'Mike "DRIP King"',
+    quotes: [
+      "Dividend reinvestment is the 8th wonder of the world. I've been DRIPping for 20 years.",
+      "My portfolio pays me $4,200 a month in dividends. Started with $500.",
+      "Compound interest is boring until year 10. Then it's absolutely magical.",
+      "I never sell. I just let dividends buy more shares. Rinse and repeat forever."
+    ],
+    quoteIndex: 0,
+    title: 'Dividend Investor, $1.2M Portfolio',
+    shirtColor: '#059669', pantsColor: '#064e3b', hairColor: '#78716c',
+    phase: 1, speed: 0.6, angle: Math.PI/3
+  },
+  {
+    x: 2500, y: 3400, homeX: 2500, homeY: 3400, patrolRadius: 280,
+    name: 'Alex "The Patient One"',
+    quotes: [
+      "I bought Amazon at $50 in 2008. Everyone called me crazy. Still holding.",
+      "The hardest part of investing isn't finding great stocks. It's sitting and doing nothing.",
+      "Time in the market beats timing the market. Every single time.",
+      "My best years of returns came right after my worst years. Patience is everything."
+    ],
+    quoteIndex: 0,
+    title: 'Buy & Hold, 18 Years',
+    shirtColor: '#7c3aed', pantsColor: '#4c1d95', hairColor: '#1c1917',
+    phase: 2, speed: 0.5, angle: Math.PI
+  },
+  {
+    x: 5500, y: 1500, homeX: 5500, homeY: 1500, patrolRadius: 320,
+    name: 'Jordan "The Diversifier"',
+    quotes: [
+      "70% stocks, 20% bonds, 10% alternatives. Rebalance quarterly. Sleep well at night.",
+      "Diversification is the only free lunch in investing. I eat well every day.",
+      "I survived 2008, 2020, and 2022 without panic selling. Asset allocation saved me.",
+      "Don't put all your eggs in one basket. I have 12 baskets and they're all doing fine."
+    ],
+    quoteIndex: 0,
+    title: 'Asset Allocator, 15% CAGR',
+    shirtColor: '#d97706', pantsColor: '#92400e', hairColor: '#a8a29e',
+    phase: 3, speed: 0.7, angle: Math.PI*1.5
+  },
+  {
+    x: 3800, y: 4200, homeX: 3800, homeY: 4200, patrolRadius: 300,
+    name: 'Taylor "Side Hustle"',
+    quotes: [
+      "I invest every dollar of side hustle income. The business funds the portfolio.",
+      "Started a blog in 2019, invested all the revenue into index funds. Best decision ever.",
+      "Your income is your biggest wealth-building tool. Invest the difference.",
+      "I live on my salary and invest my side income. Two income streams, one grows forever."
+    ],
+    quoteIndex: 0,
+    title: 'Entrepreneur Investor, $800K NW',
+    shirtColor: '#dc2626', pantsColor: '#450a0a', hairColor: '#292524',
+    phase: 4, speed: 0.9, angle: Math.PI/6, isWoman: true
+  },
+  {
+    x: 6200, y: 3600, homeX: 6200, homeY: 3600, patrolRadius: 260,
+    name: 'Casey "The Contrarian"',
+    quotes: [
+      "I loaded up in March 2020 when everyone was selling. Best month of my life.",
+      "When CNBC says sell everything, I start buying. Fear is my favorite indicator.",
+      "The best time to buy is when you feel sick about buying. That's when it's cheapest.",
+      "Everyone's a genius in a bull market. The real money is made in the bear markets."
+    ],
+    quoteIndex: 0,
+    title: 'Contrarian, 500% Since 2020',
+    shirtColor: '#0891b2', pantsColor: '#164e63', hairColor: '#d97706',
+    phase: 5, speed: 0.7, angle: Math.PI*0.8
+  },
 ];
 
 let activeNpcDialogue = null;
@@ -788,7 +1348,7 @@ const secretStone = { x: WORLD_W - 120, y: WORLD_H - 120, found: false };
 
 // 3. Hidden dev NPC tucked away
 const hiddenNpcs = [
-  { x: 4050, y: 150, name: 'The Dev', quote: "I built this whole world in one file. Don't judge me.", title: 'Creator of this game', color: '#60a5fa', found: false },
+  { x: WORLD_W - 150, y: 150, name: 'The Dev', quote: "I built this whole world in one file. Don't judge me.", title: 'Creator of this game', color: '#60a5fa', found: false },
   { x: 150, y: WORLD_H - 150, name: 'Diamond Hands Dan', quote: "I've been holding since $3. Through the crash, through the dip, through it all. And you know what? I'd do it again.", title: 'OG Investor', color: '#fbbf24', found: false },
 ];
 
@@ -1673,6 +2233,194 @@ function drawFamousInvestor(investor, time) {
   ctx.textAlign = 'left';
 }
 
+function drawRetailInvestor(ri, time) {
+  const sx = ri.x - camera.x, sy = ri.y - camera.y;
+  if (sx < -40 || sx > canvas.width+40 || sy < -60 || sy > canvas.height+40) return;
+
+  const idle = Math.sin(time * 0.002 + ri.phase) * 1;
+  const nearPlayer = Math.hypot(player.x - ri.x, player.y - ri.y) < 80;
+  const walkBob = nearPlayer ? 0 : Math.sin(time * 0.004 + ri.phase) * 2;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 16, 10, 4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Success aura
+  ctx.fillStyle = 'rgba(74,222,128,0.08)';
+  ctx.beginPath();
+  ctx.arc(sx, sy, 28, 0, Math.PI*2);
+  ctx.fill();
+
+  ctx.save();
+  ctx.translate(sx, sy + idle + walkBob);
+
+  const legSwing = nearPlayer ? 0 : Math.sin(time * 0.006 + ri.phase) * 5;
+
+  if (ri.isWoman) {
+    // Legs
+    ctx.fillStyle = ri.pantsColor;
+    ctx.fillRect(-4, 6, 4, 12 + legSwing * 0.3);
+    ctx.fillRect(1, 6, 4, 12 - legSwing * 0.3);
+    ctx.fillStyle = '#f5f5f4';
+    ctx.fillRect(-5, 16, 5, 3);
+    ctx.fillRect(1, 16, 5, 3);
+
+    // Body (blouse)
+    ctx.fillStyle = ri.shirtColor;
+    ctx.beginPath();
+    ctx.roundRect(-9, -8, 18, 18, 3);
+    ctx.fill();
+
+    // Arms
+    ctx.fillStyle = ri.shirtColor;
+    ctx.fillRect(-13, -6, 5, 10);
+    ctx.fillRect(8, -6, 5, 10);
+    ctx.fillStyle = '#f5c6a0';
+    ctx.fillRect(-12, 3, 4, 4);
+    ctx.fillRect(9, 3, 4, 4);
+
+    // Head
+    ctx.fillStyle = '#f5c6a0';
+    ctx.beginPath();
+    ctx.ellipse(0, -20, 9, 11, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = ri.hairColor;
+    ctx.beginPath();
+    ctx.ellipse(0, -26, 10, 7, 0, Math.PI, Math.PI*2);
+    ctx.fill();
+    ctx.fillRect(-10, -26, 3, 14);
+    ctx.fillRect(7, -26, 3, 14);
+
+    // Eyes
+    ctx.fillStyle = '#2d1810';
+    ctx.beginPath(); ctx.arc(-3, -21, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3, -21, 1.5, 0, Math.PI*2); ctx.fill();
+
+    // Smile
+    ctx.strokeStyle = '#c9826a';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(0, -16, 3, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  } else {
+    // Legs
+    ctx.fillStyle = ri.pantsColor;
+    ctx.fillRect(-5, 6, 5, 12 + legSwing * 0.3);
+    ctx.fillRect(1, 6, 5, 12 - legSwing * 0.3);
+    ctx.fillStyle = '#78716c';
+    ctx.fillRect(-5, 16, 6, 3);
+    ctx.fillRect(1, 16, 6, 3);
+
+    // Body (polo shirt)
+    ctx.fillStyle = ri.shirtColor;
+    ctx.beginPath();
+    ctx.roundRect(-9, -8, 18, 18, 3);
+    ctx.fill();
+    // Collar
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.moveTo(-3, -8);
+    ctx.lineTo(0, -4);
+    ctx.lineTo(3, -8);
+    ctx.closePath();
+    ctx.fill();
+
+    // Arms
+    ctx.fillStyle = ri.shirtColor;
+    ctx.fillRect(-13, -6, 5, 10);
+    ctx.fillRect(8, -6, 5, 10);
+    ctx.fillStyle = '#f5c6a0';
+    ctx.fillRect(-12, 3, 4, 4);
+    ctx.fillRect(9, 3, 4, 4);
+
+    // Head
+    ctx.fillStyle = '#f5c6a0';
+    ctx.beginPath();
+    ctx.ellipse(0, -20, 9, 11, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = ri.hairColor;
+    ctx.beginPath();
+    ctx.ellipse(0, -26, 10, 6, 0, Math.PI, Math.PI*2);
+    ctx.fill();
+    ctx.fillRect(-10, -26, 3, 5);
+    ctx.fillRect(7, -26, 3, 5);
+
+    // Eyes
+    ctx.fillStyle = '#2d1810';
+    ctx.beginPath(); ctx.arc(-3, -21, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3, -21, 1.5, 0, Math.PI*2); ctx.fill();
+
+    // Smile
+    ctx.strokeStyle = '#c9826a';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(0, -16, 3, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  // Small chart icon above head
+  ctx.strokeStyle = '#4ade80';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(sx - 6, sy - 34);
+  ctx.lineTo(sx - 2, sy - 38);
+  ctx.lineTo(sx + 2, sy - 36);
+  ctx.lineTo(sx + 6, sy - 42);
+  ctx.stroke();
+
+  // Name label
+  ctx.fillStyle = '#4ade80';
+  ctx.font = 'bold 9px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(ri.name, sx, sy + 28);
+  ctx.fillStyle = '#888';
+  ctx.font = '7px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(ri.title, sx, sy + 37);
+  ctx.textAlign = 'left';
+}
+
+function drawPortalSwirl(comp, time) {
+  const sx = comp.x - camera.x, sy = comp.y - camera.y;
+  if (sx < -200 || sx > canvas.width+200 || sy < -200 || sy > canvas.height+200) return;
+
+  // Portal swirl overlay on the building
+  const portalGrad = ctx.createRadialGradient(sx, sy - 5, 0, sx, sy - 5, 25);
+  portalGrad.addColorStop(0, comp.colorLight + '60');
+  portalGrad.addColorStop(0.5, comp.color + '30');
+  portalGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = portalGrad;
+  ctx.beginPath();
+  ctx.arc(sx, sy - 5, 25 + Math.sin(time*0.004)*4, 0, Math.PI*2);
+  ctx.fill();
+
+  // Swirling particles
+  for (let i = 0; i < 6; i++) {
+    const angle = (time * 0.002 + i * Math.PI * 2 / 6) % (Math.PI * 2);
+    const dist = 16 + Math.sin(time * 0.003 + i) * 6;
+    const px = sx + Math.cos(angle) * dist;
+    const py = sy - 5 + Math.sin(angle) * dist * 0.6;
+    ctx.fillStyle = comp.colorLight + Math.floor((0.3 + Math.sin(time*0.005+i)*0.2)*255).toString(16).padStart(2,'0');
+    ctx.beginPath();
+    ctx.arc(px, py, 2, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Portal label
+  ctx.fillStyle = comp.colorLight;
+  ctx.font = '10px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(comp.portalLabel || 'Mini-Game', sx, sy - 78);
+  ctx.textAlign = 'left';
+}
+
 function drawCenterHub(time) {
   const sx = WORLD_W/2 - camera.x, sy = WORLD_H/2 - camera.y;
   if (sx < -200 || sx > canvas.width+200 || sy < -200 || sy > canvas.height+200) return;
@@ -1713,24 +2461,20 @@ function drawCenterHub(time) {
     ctx.fill();
   }
 
-  // Direction signs
-  const signs = [
-    { label: 'SoFi', color: companies.sofi.color, angle: Math.PI/2 },
-    { label: 'Shopify', color: companies.shopify.color, angle: -Math.PI/2 },
-    { label: 'Remitly', color: companies.remitly.color, angle: Math.PI },
-    { label: 'Lemonade', color: companies.lemonade.color, angle: 0 },
-    { label: 'Opendoor', color: companies.opendoor.color, angle: Math.PI/4 + Math.PI/8 },
-    { label: 'Shift4', color: shift4Hub.color, angle: -Math.PI*3/4 },
-  ];
-  for (const sign of signs) {
-    const signX = sx + Math.cos(sign.angle) * 100;
-    const signY = sy + Math.sin(sign.angle) * 70;
-    // Arrow
-    ctx.fillStyle = sign.color;
-    ctx.font = 'bold 11px "Segoe UI", system-ui, sans-serif';
+  // Direction signs - dynamically generated from all companies + shift4
+  const allHubsForSigns = [...Object.values(companies), shift4Hub];
+  const centerX2 = WORLD_W/2, centerY2 = WORLD_H/2;
+  for (let si = 0; si < allHubsForSigns.length; si++) {
+    const hub = allHubsForSigns[si];
+    const angle = Math.atan2(hub.y - centerY2, hub.x - centerX2);
+    const signDist = 95 + (si % 2) * 20;
+    const signX = sx + Math.cos(angle) * signDist;
+    const signY = sy + Math.sin(angle) * signDist * 0.7;
+    const arrow = Math.abs(angle) < Math.PI/4 ? '\u2192' : Math.abs(angle) > Math.PI*3/4 ? '\u2190' : angle < 0 ? '\u2191' : '\u2193';
+    ctx.fillStyle = hub.color;
+    ctx.font = 'bold 9px "Segoe UI", system-ui, sans-serif';
     ctx.textAlign = 'center';
-    const arrow = sign.angle === 0 ? '\u2192' : sign.angle === Math.PI ? '\u2190' : sign.angle < 0 ? '\u2191' : '\u2193';
-    ctx.fillText(`${arrow} ${sign.label}`, signX, signY);
+    ctx.fillText(`${arrow} ${hub.ticker || hub.name}`, signX, signY);
   }
   ctx.textAlign = 'left';
 
@@ -1801,15 +2545,17 @@ function drawMinimap() {
     mmCtx.fill();
   }
 
-  // Shift4 portal on minimap
-  mmCtx.fillStyle = shift4Hub.color + '60';
-  mmCtx.beginPath();
-  mmCtx.arc(shift4Hub.x * scaleX, shift4Hub.y * scaleY, 12, 0, Math.PI*2);
-  mmCtx.fill();
-  mmCtx.fillStyle = shift4Hub.color;
-  mmCtx.beginPath();
-  mmCtx.arc(shift4Hub.x * scaleX, shift4Hub.y * scaleY, 4, 0, Math.PI*2);
-  mmCtx.fill();
+  // Portal hubs on minimap
+  for (const hub of allPortalHubs) {
+    mmCtx.fillStyle = (hub.color || '#00d4aa') + '60';
+    mmCtx.beginPath();
+    mmCtx.arc(hub.x * scaleX, hub.y * scaleY, 8, 0, Math.PI*2);
+    mmCtx.fill();
+    mmCtx.fillStyle = hub.color || '#00d4aa';
+    mmCtx.beginPath();
+    mmCtx.arc(hub.x * scaleX, hub.y * scaleY, 3, 0, Math.PI*2);
+    mmCtx.fill();
+  }
 
   // Data points
   for (const dp of allDataPoints) {
@@ -1830,6 +2576,12 @@ function drawMinimap() {
     mmCtx.fillStyle = 'rgba(251,191,36,0.7)';
     mmCtx.beginPath();
     mmCtx.arc(inv.x * scaleX, inv.y * scaleY, 2.5, 0, Math.PI*2);
+    mmCtx.fill();
+  }
+  for (const ri of retailInvestors) {
+    mmCtx.fillStyle = 'rgba(74,222,128,0.7)';
+    mmCtx.beginPath();
+    mmCtx.arc(ri.x * scaleX, ri.y * scaleY, 2.5, 0, Math.PI*2);
     mmCtx.fill();
   }
 
@@ -1892,6 +2644,9 @@ function updateZoneLabel() {
       break;
     }
   }
+  if (!zone && Math.hypot(player.x - shift4Hub.x, player.y - shift4Hub.y) < 260) {
+    zone = shift4Hub;
+  }
   if (Math.hypot(player.x - WORLD_W/2, player.y - WORLD_H/2) < 100) {
     label.textContent = 'Central Hub';
     label.classList.add('visible');
@@ -1912,6 +2667,11 @@ let lastTime = 0;
 function gameLoop(time) {
   if (gameState === 'paymentCity') {
     paymentCityLoop(time);
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+  if (gameState === 'miniGame') {
+    miniGameLoop(time);
     requestAnimationFrame(gameLoop);
     return;
   }
@@ -1958,6 +2718,11 @@ function gameLoop(time) {
     if (!airborne && !blocked) {
       for (const inv of famousInvestors) {
         if (Math.hypot(nx - inv.x, ny - inv.y) < 20) { blocked = true; break; }
+      }
+    }
+    if (!airborne && !blocked) {
+      for (const ri of retailInvestors) {
+        if (Math.hypot(nx - ri.x, ny - ri.y) < 20) { blocked = true; break; }
       }
     }
     if (!airborne && !blocked) {
@@ -2073,53 +2838,90 @@ function gameLoop(time) {
     if (discoTimer <= 0) discoMode = false;
   }
 
-  // Shift4 portal proximity detection
+  // Portal and hub proximity detection
   const hubPrompt = document.getElementById('hub-prompt');
+  let portalNear = null;
+  let portalNearDist = Infinity;
+
+  // Check Shift4 portal
   const shift4Dist = Math.hypot(player.x - shift4Hub.x, player.y - shift4Hub.y);
-  let shift4Near = shift4Dist < 90 && shift4Dist > 40;
+  if (shift4Dist < 90 && shift4Dist > 40) {
+    portalNear = shift4Hub;
+    portalNearDist = shift4Dist;
+  }
 
-  if (shift4Near) {
-    hubPrompt.textContent = 'Press E to Enter Payment City';
-    hubPrompt.classList.add('visible');
-    if (keys['_ePressed']) {
-      keys['_ePressed'] = false;
-      hubPrompt.classList.remove('visible');
-      enterPaymentCity();
+  // Check all company portals
+  for (const [key, comp] of Object.entries(companies)) {
+    const hubDist = Math.hypot(player.x - comp.x, player.y - comp.y);
+    if (hubDist < 90 && hubDist > 40 && hubDist < portalNearDist) {
+      portalNear = comp;
+      portalNearDist = hubDist;
     }
   }
 
-  // Hub proximity detection (companies)
   nearestHub = null;
-  if (!shift4Near) {
-    for (const [key, comp] of Object.entries(companies)) {
-      const hubDist = Math.hypot(player.x - comp.x, player.y - comp.y);
-      if (hubDist < 90 && hubDist > 40) {
-        nearestHub = comp;
-        break;
+  if (portalNear) {
+    if (portalNear === shift4Hub) {
+      hubPrompt.textContent = 'Press E to Enter Payment City';
+      hubPrompt.classList.add('visible');
+      if (keys['_ePressed']) {
+        keys['_ePressed'] = false;
+        hubPrompt.classList.remove('visible');
+        enterPaymentCity();
+      }
+    } else if (portalNear.isPortal && portalNear.miniGameKey) {
+      hubPrompt.textContent = `Press E for Overview | Press F to Enter ${portalNear.portalLabel}`;
+      hubPrompt.classList.add('visible');
+      if (keys['_ePressed']) {
+        keys['_ePressed'] = false;
+        if (!hubPanelActive) {
+          hubPanelActive = true;
+          nearestHub = portalNear;
+          activePanel = 'hub-' + portalNear.ticker;
+          const panel = document.getElementById('data-panel');
+          let html = `
+            <h2 style="color:${portalNear.color}">${portalNear.name}</h2>
+            <div class="subtitle">${portalNear.ticker} - Quarterly Overview</div>
+            <div class="highlight" style="background:${portalNear.colorBg}; border-left: 3px solid ${portalNear.color}; margin-top: 0;">${portalNear.summary}</div>
+            ${portalNear.earningsUrl ? `<a href="${portalNear.earningsUrl}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:14px;padding:8px 16px;background:${portalNear.colorBg};border:1px solid ${portalNear.color};border-radius:8px;color:${portalNear.colorLight};text-decoration:none;font-size:13px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">View Q4 2025 Earnings Report &rarr;</a>` : ''}
+            <div class="prompt">Walk away to close | Press F for mini-game</div>
+          `;
+          panel.innerHTML = html;
+          panel.classList.add('visible');
+        }
+      }
+      if (keys['f']) {
+        keys['f'] = false;
+        hubPrompt.classList.remove('visible');
+        hideDataPanel();
+        hubPanelActive = false;
+        activePanel = null;
+        enterMiniGame(portalNear.miniGameKey);
+      }
+    } else {
+      // Non-portal company
+      nearestHub = portalNear;
+      hubPrompt.textContent = 'Press E for Company Overview';
+      hubPrompt.classList.add('visible');
+      if (keys['_ePressed']) {
+        keys['_ePressed'] = false;
+        if (!hubPanelActive) {
+          hubPanelActive = true;
+          activePanel = 'hub-' + nearestHub.ticker;
+          const panel = document.getElementById('data-panel');
+          let html = `
+            <h2 style="color:${nearestHub.color}">${nearestHub.name}</h2>
+            <div class="subtitle">${nearestHub.ticker} - Quarterly Overview</div>
+            <div class="highlight" style="background:${nearestHub.colorBg}; border-left: 3px solid ${nearestHub.color}; margin-top: 0;">${nearestHub.summary}</div>
+            ${nearestHub.earningsUrl ? `<a href="${nearestHub.earningsUrl}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:14px;padding:8px 16px;background:${nearestHub.colorBg};border:1px solid ${nearestHub.color};border-radius:8px;color:${nearestHub.colorLight};text-decoration:none;font-size:13px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">View Q4 2025 Earnings Report &rarr;</a>` : ''}
+            <div class="prompt">Walk away to close</div>
+          `;
+          panel.innerHTML = html;
+          panel.classList.add('visible');
+        }
       }
     }
-  }
-  if (nearestHub) {
-    hubPrompt.textContent = 'Press E for Company Overview';
-    hubPrompt.classList.add('visible');
-    if (keys['_ePressed']) {
-      keys['_ePressed'] = false;
-      if (!hubPanelActive) {
-        hubPanelActive = true;
-        activePanel = 'hub-' + nearestHub.ticker;
-        const panel = document.getElementById('data-panel');
-        let html = `
-          <h2 style="color:${nearestHub.color}">${nearestHub.name}</h2>
-          <div class="subtitle">${nearestHub.ticker} - Quarterly Overview</div>
-          <div class="highlight" style="background:${nearestHub.colorBg}; border-left: 3px solid ${nearestHub.color}; margin-top: 0;">${nearestHub.summary}</div>
-          ${nearestHub.earningsUrl ? `<a href="${nearestHub.earningsUrl}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:14px;padding:8px 16px;background:${nearestHub.colorBg};border:1px solid ${nearestHub.color};border-radius:8px;color:${nearestHub.colorLight};text-decoration:none;font-size:13px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">View Q4 2025 Earnings Report &rarr;</a>` : ''}
-          <div class="prompt">Walk away to close</div>
-        `;
-        panel.innerHTML = html;
-        panel.classList.add('visible');
-      }
-    }
-  } else if (!shift4Near) {
+  } else {
     hubPrompt.classList.remove('visible');
     keys['_ePressed'] = false;
     if (hubPanelActive) {
@@ -2166,6 +2968,24 @@ function gameLoop(time) {
   }
 
   if (!foundNpc) {
+    for (const ri of retailInvestors) {
+      if (Math.hypot(player.x - ri.x, player.y - ri.y) < 55) {
+        if (activeNpcDialogue !== ri) {
+          activeNpcDialogue = ri;
+          npcDialogue.querySelector('.npc-name').textContent = ri.name;
+          npcDialogue.querySelector('.npc-name').style.color = '#4ade80';
+          npcDialogue.querySelector('.npc-quote').textContent = `"${ri.quotes[ri.quoteIndex]}"`;
+          npcDialogue.querySelector('.npc-label').textContent = ri.title;
+          ri.quoteIndex = (ri.quoteIndex + 1) % ri.quotes.length;
+        }
+        npcDialogue.classList.add('visible');
+        foundNpc = true;
+        break;
+      }
+    }
+  }
+
+  if (!foundNpc) {
     for (const hnpc of hiddenNpcs) {
       if (Math.hypot(player.x - hnpc.x, player.y - hnpc.y) < 55) {
         if (activeNpcDialogue !== hnpc) {
@@ -2187,6 +3007,24 @@ function gameLoop(time) {
     activeNpcDialogue = null;
   }
 
+  // Update walking retail investors
+  for (const ri of retailInvestors) {
+    const nearPlayer = Math.hypot(player.x - ri.x, player.y - ri.y) < 80;
+    if (!nearPlayer) {
+      ri.angle += 0.008;
+      const targetX = ri.homeX + Math.cos(ri.angle) * ri.patrolRadius;
+      const targetY = ri.homeY + Math.sin(ri.angle * 0.7) * ri.patrolRadius * 0.6;
+      const dxr = targetX - ri.x, dyr = targetY - ri.y;
+      const len = Math.hypot(dxr, dyr);
+      if (len > 1) {
+        ri.x += (dxr / len) * ri.speed;
+        ri.y += (dyr / len) * ri.speed;
+      }
+      ri.x = Math.max(50, Math.min(WORLD_W - 50, ri.x));
+      ri.y = Math.max(50, Math.min(WORLD_H - 50, ri.y));
+    }
+  }
+
   // === DRAW ===
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -2203,6 +3041,11 @@ function gameLoop(time) {
 
   // Shift4 portal zone
   drawShift4Zone(time);
+
+  // Draw portal swirls on company portals
+  for (const comp of Object.values(companies)) {
+    if (comp.isPortal) drawPortalSwirl(comp, time);
+  }
 
   // Data points
   for (const dp of allDataPoints) drawDataPoint(dp, time);
@@ -2248,11 +3091,12 @@ function gameLoop(time) {
     }
   }
 
-  // Build depth-sorted entity list (trees, NPCs, player, hidden NPCs)
+  // Build depth-sorted entity list (trees, NPCs, player, hidden NPCs, retail investors)
   const entities = [];
   for (const t of trees) entities.push({ type: 'tree', y: t.y, data: t });
   for (const z of zombieInvestors) entities.push({ type: 'zombie', y: z.y, data: z });
   for (const inv of famousInvestors) entities.push({ type: 'investor', y: inv.y, data: inv });
+  for (const ri of retailInvestors) entities.push({ type: 'retailInvestor', y: ri.y, data: ri });
   for (const hnpc of hiddenNpcs) entities.push({ type: 'hiddenNpc', y: hnpc.y, data: hnpc });
   entities.push({ type: 'player', y: player.y });
   entities.sort((a, b) => a.y - b.y);
@@ -2261,6 +3105,7 @@ function gameLoop(time) {
     if (e.type === 'tree') drawTree(e.data, time);
     else if (e.type === 'zombie') drawZombie(e.data, time);
     else if (e.type === 'investor') drawFamousInvestor(e.data, time);
+    else if (e.type === 'retailInvestor') drawRetailInvestor(e.data, time);
     else if (e.type === 'hiddenNpc') {
       // Draw hidden NPC - mysterious cloaked figure
       const hn = e.data;
@@ -3157,6 +4002,750 @@ function drawCityPlayer(time) {
 
   ctx.restore();
 }
+
+// ===== GENERIC MINI-GAME ENGINE =====
+const miniGameConfigs = {
+  nuBank: {
+    name: 'Digital Bank City', worldW: 2800, worldH: 2000,
+    playerColor: '#820ad1', skyColor: '#1a1028',
+    groundColor: '#2a1f3a', roadColor: '#3d2d50',
+    hubRef: () => companies.nu,
+    buildingTypes: {
+      branch: { label: 'Branch', icon: '\u{1F3E6}', color: '#820ad1', colorDark: '#581c87', txnMin: 50, txnMax: 200, txnInterval: 1000, sw: 80, sh: 60 },
+      atm: { label: 'ATM', icon: '\u{1F4B3}', color: '#a855f7', colorDark: '#7c3aed', txnMin: 10, txnMax: 80, txnInterval: 600, sw: 50, sh: 45 },
+      digital: { label: 'Digital Kiosk', icon: '\u{1F4F1}', color: '#c084fc', colorDark: '#9333ea', txnMin: 5, txnMax: 40, txnInterval: 400, sw: 55, sh: 45 },
+      corporate: { label: 'Corporate', icon: '\u{1F3E2}', color: '#6d28d9', colorDark: '#4c1d95', txnMin: 500, txnMax: 2000, txnInterval: 3000, sw: 100, sh: 75 },
+    },
+    buildings: [
+      { x:300, y:250, type:'branch', name:'Centro Branch' },{ x:700, y:200, type:'atm', name:'ATM Paulista' },
+      { x:1100, y:280, type:'digital', name:'Nu Kiosk' },{ x:1500, y:220, type:'branch', name:'Copacabana' },
+      { x:1900, y:260, type:'atm', name:'ATM Ipanema' },{ x:2300, y:200, type:'digital', name:'Mobile Hub' },
+      { x:350, y:600, type:'corporate', name:'Nu HQ' },{ x:800, y:700, type:'branch', name:'Bela Vista' },
+      { x:1200, y:650, type:'atm', name:'ATM Norte' },{ x:1600, y:600, type:'digital', name:'Pix Station' },
+      { x:2000, y:700, type:'branch', name:'Jardins' },{ x:2400, y:650, type:'atm', name:'ATM Sul' },
+      { x:400, y:1000, type:'digital', name:'App Corner' },{ x:900, y:1050, type:'branch', name:'Moema' },
+      { x:1400, y:1000, type:'corporate', name:'Tech Campus' },{ x:1900, y:1050, type:'digital', name:'QR Pay' },
+      { x:2500, y:1000, type:'branch', name:'Vila Madalena' },
+      { x:300, y:1400, type:'atm', name:'ATM West' },{ x:800, y:1450, type:'branch', name:'Pinheiros' },
+      { x:1300, y:1400, type:'digital', name:'NuPay' },{ x:1800, y:1450, type:'atm', name:'ATM East' },
+      { x:2300, y:1400, type:'branch', name:'Itaim' },{ x:500, y:1750, type:'digital', name:'Crypto Desk' },
+      { x:1100, y:1800, type:'branch', name:'Brooklin' },{ x:1700, y:1750, type:'atm', name:'ATM Central' },
+      { x:2200, y:1800, type:'corporate', name:'Data Center' },
+    ],
+    events: [
+      { title:'Credit Card Rush!', desc:'Black Friday is driving massive credit card transactions.', choices:[
+        { label:'Boost Limits', desc:'+80% volume for 20s', effect:{volMult:1.8,duration:20000} },
+        { label:'Play Safe', desc:'+30% volume, lower risk', effect:{volMult:1.3,duration:20000} }
+      ]},
+      { title:'Pix Integration', desc:'Central bank mandates instant Pix processing.', choices:[
+        { label:'Invest $800', desc:'+50% speed for 25s', effect:{cost:800,speedMult:1.5,duration:25000} },
+        { label:'Delay', desc:'ATMs offline 10s', effect:{blockType:'atm',duration:10000} }
+      ]},
+      { title:'Customer Milestone!', desc:'You just crossed 1 million customers in this city!', choices:[
+        { label:'Celebrate', desc:'Instant $2,000 bonus', effect:{bonus:2000} },
+        { label:'Reinvest', desc:'+40% revenue for 20s', effect:{revMult:1.4,duration:20000} }
+      ]},
+      { title:'Fraud Detection', desc:'Suspicious patterns detected in digital transactions.', choices:[
+        { label:'Investigate', desc:'Pause all 5s, avoid loss', effect:{pauseAll:true,duration:5000} },
+        { label:'Ignore', desc:'25% chance lose $1500', effect:{riskLoss:1500,riskChance:0.25} }
+      ]},
+    ]
+  },
+  deliEmpire: {
+    name: 'Deli Empire', worldW: 2600, worldH: 1800,
+    playerColor: '#e85d04', skyColor: '#1a1510',
+    groundColor: '#2a2518', roadColor: '#4a3d28',
+    hubRef: () => companies.mama,
+    buildingTypes: {
+      deli: { label: 'Deli Counter', icon: '\u{1F969}', color: '#e85d04', colorDark: '#9a3412', txnMin: 15, txnMax: 60, txnInterval: 700, sw: 70, sh: 55 },
+      supermarket: { label: 'Supermarket', icon: '\u{1F6D2}', color: '#fb923c', colorDark: '#c2410c', txnMin: 100, txnMax: 400, txnInterval: 2000, sw: 95, sh: 70 },
+      warehouse: { label: 'Warehouse', icon: '\u{1F4E6}', color: '#78350f', colorDark: '#451a03', txnMin: 500, txnMax: 2000, txnInterval: 5000, sw: 110, sh: 80 },
+      truck: { label: 'Food Truck', icon: '\u{1F69A}', color: '#f97316', colorDark: '#ea580c', txnMin: 20, txnMax: 100, txnInterval: 900, sw: 65, sh: 50 },
+    },
+    buildings: [
+      { x:300, y:200, type:'deli', name:"Tony's Deli" },{ x:700, y:250, type:'truck', name:'Meatball Truck' },
+      { x:1100, y:200, type:'deli', name:'Fresh Cuts' },{ x:1500, y:260, type:'supermarket', name:'MegaMart' },
+      { x:1900, y:220, type:'deli', name:'Italian Corner' },{ x:2300, y:250, type:'truck', name:'Wrap Wagon' },
+      { x:350, y:550, type:'supermarket', name:'FoodCo' },{ x:800, y:600, type:'deli', name:'Mama\'s Own' },
+      { x:1200, y:550, type:'warehouse', name:'Central Depot' },{ x:1700, y:600, type:'truck', name:'Salad Cart' },
+      { x:2100, y:580, type:'deli', name:'Brooklyn Deli' },{ x:2500, y:550, type:'supermarket', name:'WholeFoods' },
+      { x:400, y:900, type:'truck', name:'BBQ Bus' },{ x:900, y:950, type:'deli', name:'Cheese Cave' },
+      { x:1400, y:900, type:'supermarket', name:'Costco Deli' },{ x:1900, y:950, type:'deli', name:'Olive Bar' },
+      { x:2400, y:900, type:'warehouse', name:'Cold Storage' },
+      { x:300, y:1250, type:'deli', name:'Pastrami Palace' },{ x:800, y:1300, type:'truck', name:'Soup Truck' },
+      { x:1300, y:1250, type:'deli', name:'Sausage Shack' },{ x:1800, y:1300, type:'supermarket', name:'Trader Joe' },
+      { x:2300, y:1250, type:'truck', name:'Pretzel Cart' },
+      { x:500, y:1550, type:'supermarket', name:'Kroger' },{ x:1100, y:1600, type:'deli', name:'Sub Station' },
+      { x:1700, y:1550, type:'warehouse', name:'Dist. Center' },{ x:2200, y:1600, type:'deli', name:'Pickle Barrel' },
+    ],
+    events: [
+      { title:'Holiday Catering Rush!', desc:'Thanksgiving orders are flooding in!', choices:[
+        { label:'All Hands on Deck', desc:'2x deli output for 20s', effect:{volMult:2,duration:20000} },
+        { label:'Prioritize Quality', desc:'+50% revenue per sale for 15s', effect:{revMult:1.5,duration:15000} }
+      ]},
+      { title:'Supply Chain Issue', desc:'Truck delivery delays affecting warehouses.', choices:[
+        { label:'Find Alternatives', desc:'$500 cost, keep running', effect:{cost:500} },
+        { label:'Wait It Out', desc:'Warehouses offline 12s', effect:{blockType:'warehouse',duration:12000} }
+      ]},
+      { title:'New Recipe Goes Viral!', desc:'Your signature meatball recipe is trending on social media!', choices:[
+        { label:'Capitalize', desc:'+60% volume for 25s', effect:{volMult:1.6,duration:25000} },
+        { label:'Cash Bonus', desc:'Instant $1,200', effect:{bonus:1200} }
+      ]},
+      { title:'Health Inspection', desc:'Surprise health inspection across all locations.', choices:[
+        { label:'Full Compliance', desc:'Pause 5s, avoid fine', effect:{pauseAll:true,duration:5000} },
+        { label:'Risk It', desc:'35% chance lose $1000', effect:{riskLoss:1000,riskChance:0.35} }
+      ]},
+    ]
+  },
+  chipFoundry: {
+    name: 'Chip Foundry', worldW: 3000, worldH: 2200,
+    playerColor: '#0066cc', skyColor: '#0a1628',
+    groundColor: '#1a2540', roadColor: '#2a3a5a',
+    hubRef: () => companies.asml,
+    buildingTypes: {
+      lithography: { label: 'EUV Station', icon: '\u{1F52C}', color: '#0066cc', colorDark: '#1e3a8a', txnMin: 1000, txnMax: 5000, txnInterval: 4000, sw: 100, sh: 75 },
+      cleanroom: { label: 'Clean Room', icon: '\u{1F9EA}', color: '#3b82f6', colorDark: '#1d4ed8', txnMin: 200, txnMax: 800, txnInterval: 1500, sw: 80, sh: 60 },
+      testing: { label: 'Test Lab', icon: '\u{1F4CA}', color: '#60a5fa', colorDark: '#2563eb', txnMin: 50, txnMax: 300, txnInterval: 1000, sw: 70, sh: 55 },
+      assembly: { label: 'Assembly', icon: '\u{2699}', color: '#1e40af', colorDark: '#1e3a5f', txnMin: 100, txnMax: 500, txnInterval: 1200, sw: 85, sh: 65 },
+    },
+    buildings: [
+      { x:300, y:280, type:'cleanroom', name:'CR Alpha' },{ x:750, y:220, type:'testing', name:'QA Lab 1' },
+      { x:1200, y:300, type:'lithography', name:'EUV Bay 1' },{ x:1700, y:250, type:'assembly', name:'Assembly A' },
+      { x:2200, y:280, type:'cleanroom', name:'CR Beta' },{ x:2700, y:220, type:'testing', name:'QA Lab 2' },
+      { x:400, y:650, type:'assembly', name:'Assembly B' },{ x:900, y:700, type:'lithography', name:'EUV Bay 2' },
+      { x:1400, y:650, type:'cleanroom', name:'CR Gamma' },{ x:1900, y:700, type:'testing', name:'Yield Lab' },
+      { x:2400, y:650, type:'assembly', name:'Packaging' },
+      { x:350, y:1050, type:'lithography', name:'High-NA EUV' },{ x:850, y:1100, type:'cleanroom', name:'CR Delta' },
+      { x:1350, y:1050, type:'testing', name:'Metrology' },{ x:1850, y:1100, type:'assembly', name:'Die Sort' },
+      { x:2350, y:1050, type:'lithography', name:'EUV Bay 3' },{ x:2800, y:1100, type:'cleanroom', name:'CR Epsilon' },
+      { x:400, y:1450, type:'testing', name:'Stress Test' },{ x:900, y:1500, type:'assembly', name:'Wire Bond' },
+      { x:1400, y:1450, type:'lithography', name:'DUV Bay' },{ x:1900, y:1500, type:'cleanroom', name:'CR Zeta' },
+      { x:2500, y:1450, type:'testing', name:'Burn-In' },
+      { x:300, y:1850, type:'assembly', name:'Final Test' },{ x:900, y:1900, type:'cleanroom', name:'CR Eta' },
+      { x:1500, y:1850, type:'lithography', name:'EUV Bay 4' },{ x:2100, y:1900, type:'assembly', name:'Ship Dock' },
+      { x:2700, y:1850, type:'testing', name:'Validation' },
+    ],
+    events: [
+      { title:'AI Chip Rush!', desc:'NVIDIA needs 50% more wafers for next-gen GPUs!', choices:[
+        { label:'Maximize Output', desc:'2x EUV volume for 20s', effect:{volMult:2,duration:20000} },
+        { label:'Premium Pricing', desc:'+60% revenue for 15s', effect:{revMult:1.6,duration:15000} }
+      ]},
+      { title:'Contamination Alert', desc:'Particle detected in clean room air supply.', choices:[
+        { label:'Full Shutdown', desc:'Pause all 8s, prevent loss', effect:{pauseAll:true,duration:8000} },
+        { label:'Partial Clean', desc:'30% chance lose $3000', effect:{riskLoss:3000,riskChance:0.3} }
+      ]},
+      { title:'EUV Upgrade Available', desc:'New optics module increases throughput significantly.', choices:[
+        { label:'Install ($2,000)', desc:'+45% speed for 30s', effect:{cost:2000,speedMult:1.45,duration:30000} },
+        { label:'Skip', desc:'No change', effect:{} }
+      ]},
+      { title:'Yield Breakthrough!', desc:'New process achieves record wafer yields!', choices:[
+        { label:'Scale Up', desc:'+40% all revenue for 25s', effect:{revMult:1.4,duration:25000} },
+        { label:'Cash Bonus', desc:'Instant $3,000', effect:{bonus:3000} }
+      ]},
+    ]
+  },
+  transferHub: {
+    name: 'Transfer Hub', worldW: 2600, worldH: 1800,
+    playerColor: '#9fe870', skyColor: '#101a10',
+    groundColor: '#1a2a1a', roadColor: '#2a3a2a',
+    hubRef: () => companies.wise,
+    buildingTypes: {
+      exchange: { label: 'Exchange Office', icon: '\u{1F4B1}', color: '#9fe870', colorDark: '#4d7c0f', txnMin: 50, txnMax: 300, txnInterval: 900, sw: 75, sh: 60 },
+      bank: { label: 'Bank Partner', icon: '\u{1F3E6}', color: '#65a30d', colorDark: '#3f6212', txnMin: 200, txnMax: 1000, txnInterval: 2500, sw: 90, sh: 70 },
+      kiosk: { label: 'Mobile Kiosk', icon: '\u{1F4F2}', color: '#a3e635', colorDark: '#65a30d', txnMin: 10, txnMax: 80, txnInterval: 500, sw: 55, sh: 45 },
+      corporate: { label: 'Corporate Desk', icon: '\u{1F4BC}', color: '#4d7c0f', colorDark: '#365314', txnMin: 1000, txnMax: 5000, txnInterval: 5000, sw: 100, sh: 75 },
+    },
+    buildings: [
+      { x:300, y:200, type:'exchange', name:'EUR/USD Desk' },{ x:700, y:250, type:'kiosk', name:'Quick Send' },
+      { x:1100, y:200, type:'bank', name:'HSBC Partner' },{ x:1500, y:260, type:'exchange', name:'GBP Hub' },
+      { x:1900, y:220, type:'kiosk', name:'Wise App Point' },{ x:2300, y:250, type:'exchange', name:'JPY Desk' },
+      { x:350, y:550, type:'corporate', name:'Corporate HQ' },{ x:800, y:600, type:'exchange', name:'BRL Center' },
+      { x:1200, y:550, type:'bank', name:'Barclays' },{ x:1700, y:600, type:'kiosk', name:'Airport Kiosk' },
+      { x:2100, y:580, type:'exchange', name:'INR Desk' },{ x:2500, y:550, type:'bank', name:'Deutsche Bank' },
+      { x:400, y:900, type:'kiosk', name:'Border Point' },{ x:900, y:950, type:'exchange', name:'AUD Office' },
+      { x:1400, y:900, type:'corporate', name:'Treasury' },{ x:1900, y:950, type:'exchange', name:'CAD Desk' },
+      { x:2400, y:900, type:'bank', name:'Santander' },
+      { x:300, y:1250, type:'exchange', name:'SGD Hub' },{ x:800, y:1300, type:'kiosk', name:'Station Kiosk' },
+      { x:1300, y:1250, type:'bank', name:'Citi Partner' },{ x:1800, y:1300, type:'exchange', name:'CHF Desk' },
+      { x:2300, y:1250, type:'kiosk', name:'Mall Kiosk' },
+      { x:500, y:1550, type:'bank', name:'JP Morgan' },{ x:1100, y:1600, type:'exchange', name:'MXN Center' },
+      { x:1700, y:1550, type:'corporate', name:'Compliance' },{ x:2200, y:1600, type:'kiosk', name:'Uni Kiosk' },
+    ],
+    events: [
+      { title:'Remittance Surge!', desc:'Holiday season driving massive cross-border transfers!', choices:[
+        { label:'Scale Up', desc:'2x volume for 20s', effect:{volMult:2,duration:20000} },
+        { label:'Premium Rates', desc:'+50% revenue for 15s', effect:{revMult:1.5,duration:15000} }
+      ]},
+      { title:'Currency Volatility', desc:'Major FX fluctuation affecting exchange rates.', choices:[
+        { label:'Hedge Position', desc:'$600 cost, stable rates', effect:{cost:600} },
+        { label:'Ride It Out', desc:'25% chance lose $2000', effect:{riskLoss:2000,riskChance:0.25} }
+      ]},
+      { title:'New Corridor Opened!', desc:'Wise expands to 3 new countries.', choices:[
+        { label:'Invest ($1,500)', desc:'+50% kiosk volume 25s', effect:{cost:1500,volMult:1.5,duration:25000} },
+        { label:'Cash Bonus', desc:'Instant $1,000', effect:{bonus:1000} }
+      ]},
+      { title:'Regulatory Compliance', desc:'New KYC requirements for all transfers.', choices:[
+        { label:'Comply Now', desc:'Pause 5s, stay compliant', effect:{pauseAll:true,duration:5000} },
+        { label:'Delay', desc:'40% chance $1500 fine', effect:{riskLoss:1500,riskChance:0.4} }
+      ]},
+    ]
+  },
+  insuranceEmpire: {
+    name: 'Insurance Empire', worldW: 3000, worldH: 2200,
+    playerColor: '#1e40af', skyColor: '#0a0f1e',
+    groundColor: '#1a2240', roadColor: '#2a3458',
+    hubRef: () => companies.berkshire,
+    buildingTypes: {
+      insurance: { label: 'Insurance Office', icon: '\u{1F3E2}', color: '#1e40af', colorDark: '#1e3a5f', txnMin: 200, txnMax: 800, txnInterval: 1500, sw: 85, sh: 65 },
+      railroad: { label: 'Railroad', icon: '\u{1F682}', color: '#60a5fa', colorDark: '#2563eb', txnMin: 500, txnMax: 2000, txnInterval: 3000, sw: 100, sh: 55 },
+      energy: { label: 'Energy Plant', icon: '\u{26A1}', color: '#fbbf24', colorDark: '#b45309', txnMin: 300, txnMax: 1500, txnInterval: 2500, sw: 95, sh: 70 },
+      retail: { label: 'Retail Store', icon: '\u{1F6CD}', color: '#f87171', colorDark: '#dc2626', txnMin: 50, txnMax: 200, txnInterval: 800, sw: 70, sh: 55 },
+    },
+    buildings: [
+      { x:300, y:280, type:'insurance', name:'GEICO HQ' },{ x:750, y:220, type:'retail', name:'See\'s Candies' },
+      { x:1200, y:300, type:'railroad', name:'BNSF Terminal' },{ x:1700, y:250, type:'insurance', name:'Gen Re' },
+      { x:2200, y:280, type:'energy', name:'BHE Solar' },{ x:2700, y:220, type:'retail', name:'Dairy Queen' },
+      { x:400, y:650, type:'energy', name:'PacifiCorp' },{ x:900, y:700, type:'insurance', name:'Nat. Indemnity' },
+      { x:1400, y:650, type:'railroad', name:'BNSF Yard' },{ x:1900, y:700, type:'retail', name:'Nebraska Furn.' },
+      { x:2400, y:650, type:'insurance', name:'Alleghany' },
+      { x:350, y:1050, type:'retail', name:'Pilot Travel' },{ x:850, y:1100, type:'energy', name:'BHE Wind' },
+      { x:1350, y:1050, type:'insurance', name:'GEICO West' },{ x:1850, y:1100, type:'railroad', name:'BNSF Hub' },
+      { x:2350, y:1050, type:'retail', name:'Fruit of Loom' },{ x:2800, y:1100, type:'energy', name:'NV Energy' },
+      { x:400, y:1450, type:'insurance', name:'GEICO East' },{ x:900, y:1500, type:'retail', name:'Duracell' },
+      { x:1400, y:1450, type:'energy', name:'BHE Gas' },{ x:1900, y:1500, type:'insurance', name:'Berkshire Re' },
+      { x:2500, y:1450, type:'railroad', name:'BNSF South' },
+      { x:300, y:1850, type:'retail', name:'Brooks Sports' },{ x:900, y:1900, type:'insurance', name:'GEICO South' },
+      { x:1500, y:1850, type:'energy', name:'BHE Hydro' },{ x:2100, y:1900, type:'railroad', name:'BNSF Coast' },
+      { x:2700, y:1850, type:'retail', name:'Precision Cast' },
+    ],
+    events: [
+      { title:'Hurricane Season!', desc:'Major hurricane approaching - insurance claims incoming!', choices:[
+        { label:'Raise Reserves', desc:'$2000 cost, +60% premium for 25s', effect:{cost:2000,revMult:1.6,duration:25000} },
+        { label:'Normal Ops', desc:'40% chance lose $3000', effect:{riskLoss:3000,riskChance:0.4} }
+      ]},
+      { title:'Rail Volume Surge', desc:'Record freight volumes across BNSF network!', choices:[
+        { label:'Add Cars', desc:'+80% railroad volume 20s', effect:{volMult:1.8,duration:20000} },
+        { label:'Cash Dividend', desc:'Instant $2,500', effect:{bonus:2500} }
+      ]},
+      { title:'Investment Opportunity', desc:'Buffett found an undervalued acquisition target.', choices:[
+        { label:'Acquire ($5,000)', desc:'+40% all revenue 30s', effect:{cost:5000,revMult:1.4,duration:30000} },
+        { label:'Pass', desc:'No change', effect:{} }
+      ]},
+      { title:'Energy Price Spike', desc:'Natural gas prices surging due to cold snap.', choices:[
+        { label:'Maximize Output', desc:'2x energy revenue 15s', effect:{revMult:2,duration:15000} },
+        { label:'Hedge', desc:'+30% steady for 25s', effect:{revMult:1.3,duration:25000} }
+      ]},
+    ]
+  },
+  marketplaceTown: {
+    name: 'Marketplace Town', worldW: 3000, worldH: 2200,
+    playerColor: '#ffe600', skyColor: '#1a1800',
+    groundColor: '#2a2610', roadColor: '#3a3520',
+    hubRef: () => companies.meli,
+    buildingTypes: {
+      seller: { label: 'Seller Shop', icon: '\u{1F6CD}', color: '#ffe600', colorDark: '#a16207', txnMin: 30, txnMax: 150, txnInterval: 800, sw: 70, sh: 55 },
+      warehouse: { label: 'Warehouse', icon: '\u{1F4E6}', color: '#fbbf24', colorDark: '#b45309', txnMin: 200, txnMax: 1000, txnInterval: 2500, sw: 100, sh: 75 },
+      delivery: { label: 'Delivery Hub', icon: '\u{1F69A}', color: '#f59e0b', colorDark: '#d97706', txnMin: 50, txnMax: 200, txnInterval: 1000, sw: 80, sh: 60 },
+      fintech: { label: 'Mercado Pago', icon: '\u{1F4B3}', color: '#3b82f6', colorDark: '#1d4ed8', txnMin: 100, txnMax: 500, txnInterval: 1500, sw: 85, sh: 65 },
+    },
+    buildings: [
+      { x:300, y:280, type:'seller', name:'Electronics' },{ x:700, y:220, type:'seller', name:'Fashion' },
+      { x:1100, y:300, type:'warehouse', name:'Fulfillment 1' },{ x:1600, y:250, type:'delivery', name:'MELI Post' },
+      { x:2100, y:280, type:'seller', name:'Home & Garden' },{ x:2500, y:220, type:'fintech', name:'Pago Hub' },
+      { x:400, y:650, type:'fintech', name:'Pago Credit' },{ x:900, y:700, type:'seller', name:'Auto Parts' },
+      { x:1400, y:650, type:'delivery', name:'Flex Delivery' },{ x:1900, y:700, type:'seller', name:'Sports' },
+      { x:2400, y:650, type:'warehouse', name:'Fulfillment 2' },
+      { x:350, y:1050, type:'seller', name:'Books' },{ x:850, y:1100, type:'delivery', name:'Same Day' },
+      { x:1350, y:1050, type:'fintech', name:'Pago QR' },{ x:1850, y:1100, type:'seller', name:'Toys' },
+      { x:2350, y:1050, type:'warehouse', name:'Cold Storage' },{ x:2800, y:1100, type:'delivery', name:'MELI Air' },
+      { x:400, y:1450, type:'seller', name:'Beauty' },{ x:900, y:1500, type:'fintech', name:'Pago Invest' },
+      { x:1400, y:1450, type:'delivery', name:'Next Day' },{ x:1900, y:1500, type:'seller', name:'Pet Shop' },
+      { x:2500, y:1450, type:'seller', name:'Tools' },
+      { x:300, y:1850, type:'delivery', name:'Express Hub' },{ x:900, y:1900, type:'seller', name:'Groceries' },
+      { x:1500, y:1850, type:'warehouse', name:'Returns' },{ x:2100, y:1900, type:'fintech', name:'Pago Biz' },
+      { x:2700, y:1850, type:'seller', name:'Jewelry' },
+    ],
+    events: [
+      { title:'Buen Fin Sale!', desc:'Latin America\'s biggest shopping event is here!', choices:[
+        { label:'Max Capacity', desc:'2x all volume for 20s', effect:{volMult:2,duration:20000} },
+        { label:'Premium Sellers', desc:'+60% revenue for 15s', effect:{revMult:1.6,duration:15000} }
+      ]},
+      { title:'Logistics Challenge', desc:'Heavy rains disrupting delivery routes in Brazil.', choices:[
+        { label:'Reroute ($800)', desc:'Keep deliveries running', effect:{cost:800} },
+        { label:'Delay Deliveries', desc:'Delivery hubs offline 12s', effect:{blockType:'delivery',duration:12000} }
+      ]},
+      { title:'Mercado Pago Boom!', desc:'Digital payments adoption accelerating across the region!', choices:[
+        { label:'Expand', desc:'+80% fintech volume 25s', effect:{volMult:1.8,duration:25000} },
+        { label:'Cash Out', desc:'Instant $2,000', effect:{bonus:2000} }
+      ]},
+      { title:'Seller Fraud Alert', desc:'Counterfeit products detected on the marketplace.', choices:[
+        { label:'Full Audit', desc:'Pause 6s, protect trust', effect:{pauseAll:true,duration:6000} },
+        { label:'Quick Fix', desc:'30% chance lose $2000', effect:{riskLoss:2000,riskChance:0.3} }
+      ]},
+    ]
+  },
+  dataCenter: {
+    name: 'Data Center', worldW: 2800, worldH: 2000,
+    playerColor: '#06b6d4', skyColor: '#0a1520',
+    groundColor: '#152030', roadColor: '#253040',
+    hubRef: () => companies.nbis,
+    buildingTypes: {
+      server: { label: 'Server Rack', icon: '\u{1F5A5}', color: '#06b6d4', colorDark: '#0e7490', txnMin: 100, txnMax: 500, txnInterval: 1200, sw: 70, sh: 80 },
+      gpu: { label: 'GPU Cluster', icon: '\u{1F4A0}', color: '#22d3ee', colorDark: '#0891b2', txnMin: 500, txnMax: 3000, txnInterval: 3500, sw: 100, sh: 75 },
+      cooling: { label: 'Cooling Tower', icon: '\u{2744}', color: '#67e8f9', colorDark: '#06b6d4', txnMin: 20, txnMax: 100, txnInterval: 600, sw: 60, sh: 90 },
+      network: { label: 'Network Hub', icon: '\u{1F310}', color: '#0284c7', colorDark: '#075985', txnMin: 50, txnMax: 200, txnInterval: 800, sw: 75, sh: 55 },
+    },
+    buildings: [
+      { x:300, y:250, type:'server', name:'Rack A1' },{ x:700, y:200, type:'gpu', name:'H100 Cluster 1' },
+      { x:1100, y:280, type:'cooling', name:'Cooling North' },{ x:1500, y:220, type:'network', name:'Core Switch' },
+      { x:1900, y:260, type:'server', name:'Rack A2' },{ x:2300, y:200, type:'gpu', name:'H100 Cluster 2' },
+      { x:350, y:600, type:'network', name:'Edge Node' },{ x:800, y:700, type:'server', name:'Rack B1' },
+      { x:1200, y:650, type:'gpu', name:'Training Bay' },{ x:1600, y:600, type:'cooling', name:'Cooling East' },
+      { x:2000, y:700, type:'server', name:'Rack B2' },{ x:2400, y:650, type:'network', name:'Fiber Hub' },
+      { x:400, y:1000, type:'gpu', name:'Inference Bay' },{ x:900, y:1050, type:'cooling', name:'Cooling Central' },
+      { x:1400, y:1000, type:'server', name:'Rack C1' },{ x:1900, y:1050, type:'network', name:'Load Balancer' },
+      { x:2500, y:1000, type:'gpu', name:'H100 Cluster 3' },
+      { x:300, y:1400, type:'server', name:'Rack D1' },{ x:800, y:1450, type:'network', name:'CDN Node' },
+      { x:1300, y:1400, type:'cooling', name:'Cooling South' },{ x:1800, y:1450, type:'gpu', name:'ML Pipeline' },
+      { x:2300, y:1400, type:'server', name:'Rack D2' },
+      { x:500, y:1750, type:'network', name:'API Gateway' },{ x:1100, y:1800, type:'gpu', name:'H200 Cluster' },
+      { x:1700, y:1750, type:'cooling', name:'Cooling West' },{ x:2200, y:1800, type:'server', name:'Backup Rack' },
+    ],
+    events: [
+      { title:'AI Training Surge!', desc:'Major tech company needs emergency GPU capacity!', choices:[
+        { label:'Allocate All GPUs', desc:'2x GPU revenue for 20s', effect:{volMult:2,duration:20000} },
+        { label:'Premium Pricing', desc:'+70% revenue for 15s', effect:{revMult:1.7,duration:15000} }
+      ]},
+      { title:'Power Outage Risk', desc:'Grid instability threatening data center operations.', choices:[
+        { label:'Backup Generators', desc:'$1,200 cost, keep running', effect:{cost:1200} },
+        { label:'Risk It', desc:'35% chance total pause 10s', effect:{riskLoss:2000,riskChance:0.35} }
+      ]},
+      { title:'New GPU Delivery!', desc:'NVIDIA shipped a batch of next-gen GPUs!', choices:[
+        { label:'Install ($3,000)', desc:'+50% speed for 30s', effect:{cost:3000,speedMult:1.5,duration:30000} },
+        { label:'Sell for Cash', desc:'Instant $2,000', effect:{bonus:2000} }
+      ]},
+      { title:'Cooling System Upgrade', desc:'Advanced liquid cooling technology available.', choices:[
+        { label:'Upgrade ($1,000)', desc:'Cooling +80% output 25s', effect:{cost:1000,volMult:1.8,duration:25000} },
+        { label:'Skip', desc:'No change', effect:{} }
+      ]},
+    ]
+  },
+  loanEngine: {
+    name: 'Loan Engine', worldW: 2600, worldH: 1800,
+    playerColor: '#10b981', skyColor: '#0a1a14',
+    groundColor: '#1a2a20', roadColor: '#2a3a30',
+    hubRef: () => companies.pgy,
+    buildingTypes: {
+      bank: { label: 'Bank Branch', icon: '\u{1F3E6}', color: '#10b981', colorDark: '#047857', txnMin: 100, txnMax: 500, txnInterval: 1200, sw: 80, sh: 60 },
+      portal: { label: 'Online Portal', icon: '\u{1F4BB}', color: '#34d399', colorDark: '#059669', txnMin: 30, txnMax: 150, txnInterval: 600, sw: 65, sh: 50 },
+      risk: { label: 'Risk Center', icon: '\u{1F9E0}', color: '#6ee7b7', colorDark: '#10b981', txnMin: 200, txnMax: 1000, txnInterval: 2000, sw: 90, sh: 65 },
+      partner: { label: 'Partner Lender', icon: '\u{1F91D}', color: '#059669', colorDark: '#047857', txnMin: 500, txnMax: 2000, txnInterval: 3500, sw: 95, sh: 70 },
+    },
+    buildings: [
+      { x:300, y:200, type:'bank', name:'First National' },{ x:700, y:250, type:'portal', name:'QuickLoan.ai' },
+      { x:1100, y:200, type:'risk', name:'Risk Engine A' },{ x:1500, y:260, type:'bank', name:'Community Bank' },
+      { x:1900, y:220, type:'portal', name:'InstantApply' },{ x:2300, y:250, type:'partner', name:'SoFi Partner' },
+      { x:350, y:550, type:'partner', name:'Upgrade Inc.' },{ x:800, y:600, type:'bank', name:'Regional Credit' },
+      { x:1200, y:550, type:'portal', name:'LoanSnap' },{ x:1700, y:600, type:'risk', name:'AI Scoring' },
+      { x:2100, y:580, type:'bank', name:'Metro Bank' },{ x:2500, y:550, type:'portal', name:'EasyFund' },
+      { x:400, y:900, type:'risk', name:'Risk Engine B' },{ x:900, y:950, type:'partner', name:'Ally Partner' },
+      { x:1400, y:900, type:'bank', name:'Pacific Trust' },{ x:1900, y:950, type:'portal', name:'AutoLend.ai' },
+      { x:2400, y:900, type:'risk', name:'Fraud Detect' },
+      { x:300, y:1250, type:'portal', name:'BNPL Hub' },{ x:800, y:1300, type:'bank', name:'Heritage Bank' },
+      { x:1300, y:1250, type:'partner', name:'Marcus GS' },{ x:1800, y:1300, type:'risk', name:'Risk Engine C' },
+      { x:2300, y:1250, type:'bank', name:'Savings First' },
+      { x:500, y:1550, type:'partner', name:'Lending Club' },{ x:1100, y:1600, type:'portal', name:'HomeSnap.ai' },
+      { x:1700, y:1550, type:'risk', name:'ML Pipeline' },{ x:2200, y:1600, type:'bank', name:'Union Federal' },
+    ],
+    events: [
+      { title:'Refinancing Wave!', desc:'Rate cuts driving massive refinancing demand!', choices:[
+        { label:'Max Capacity', desc:'2x all volume for 20s', effect:{volMult:2,duration:20000} },
+        { label:'Premium Pricing', desc:'+60% fees for 15s', effect:{revMult:1.6,duration:15000} }
+      ]},
+      { title:'Default Spike', desc:'Rising delinquencies in a lending segment.', choices:[
+        { label:'Tighten Models', desc:'Pause 5s, prevent losses', effect:{pauseAll:true,duration:5000} },
+        { label:'Hold Steady', desc:'30% chance lose $2500', effect:{riskLoss:2500,riskChance:0.3} }
+      ]},
+      { title:'New Bank Partner!', desc:'Major bank wants to use Pagaya\'s AI network.', choices:[
+        { label:'Onboard ($1,500)', desc:'+50% volume 25s', effect:{cost:1500,volMult:1.5,duration:25000} },
+        { label:'Cash Bonus', desc:'Instant $1,200', effect:{bonus:1200} }
+      ]},
+      { title:'AI Model Upgrade', desc:'New model version improves approval rates by 15%.', choices:[
+        { label:'Deploy ($800)', desc:'+40% speed for 30s', effect:{cost:800,speedMult:1.4,duration:30000} },
+        { label:'Keep Current', desc:'No change', effect:{} }
+      ]},
+    ]
+  },
+};
+
+// ===== GENERIC MINI-GAME STATE =====
+let mgRevenue = 0, mgTransactions = 0, mgRevenueRate = 0;
+let mgRevenueHistory = [], mgFloatingTxns = [], mgActiveEvent = null;
+let mgLastEventTime = 0, mgEffects = [];
+let mgCamera = { x: 0, y: 0 };
+let mgPlayer = { x: 0, y: 0, dir: 0, frame: 0, frameTimer: 0, moving: false, bobPhase: 0, jumpZ: 0, jumpVel: 0, isJumping: false };
+let mgBuildings = [];
+let mgRoads = [];
+let mgLamps = [];
+
+function enterMiniGame(configKey) {
+  const config = miniGameConfigs[configKey];
+  if (!config) return;
+  activeMiniGameKey = configKey;
+  gameState = 'miniGame';
+
+  mgRevenue = 0; mgTransactions = 0; mgRevenueRate = 0;
+  mgRevenueHistory = []; mgFloatingTxns = [];
+  mgActiveEvent = null; mgLastEventTime = performance.now(); mgEffects = [];
+  mgPlayer.x = config.worldW / 2; mgPlayer.y = config.worldH / 2;
+  mgPlayer.dir = 0; mgPlayer.moving = false; mgPlayer.jumpZ = 0; mgPlayer.isJumping = false;
+
+  // Initialize buildings from config
+  mgBuildings = config.buildings.map(b => {
+    const bt = config.buildingTypes[b.type];
+    return {
+      ...b, color: bt.color, colorDark: bt.colorDark,
+      colorBg: bt.color + '20', icon: bt.icon,
+      txnMin: bt.txnMin, txnMax: bt.txnMax, txnInterval: bt.txnInterval,
+      w: bt.sw + (Math.random()-0.5)*12, h: bt.sh + (Math.random()-0.5)*8,
+      lastTxnTime: 0, active: false, btLabel: bt.label
+    };
+  });
+
+  // Generate roads
+  mgRoads = [];
+  for (let y = 0; y <= config.worldH; y += 400) mgRoads.push({ y, horizontal: true });
+  for (let x = 0; x <= config.worldW; x += 400) mgRoads.push({ x, horizontal: false });
+
+  // Generate lamps
+  mgLamps = [];
+  for (let x = 200; x < config.worldW; x += 400) {
+    for (let y = 200; y < config.worldH; y += 400) {
+      mgLamps.push({ x: x-25, y: y-25 }); mgLamps.push({ x: x+25, y: y+25 });
+    }
+  }
+
+  // Show HUD
+  const pcHud = document.getElementById('pc-hud');
+  pcHud.style.borderColor = config.playerColor + '50';
+  pcHud.querySelector('.pc-stat-value').style.color = config.playerColor;
+  pcHud.classList.add('visible');
+  document.getElementById('pc-back').classList.add('visible');
+  const learnEl = document.getElementById('pc-learn');
+  learnEl.textContent = `Walk near buildings to process ${config.name === 'Chip Foundry' ? 'wafers' : config.name === 'Data Center' ? 'compute jobs' : config.name === 'Loan Engine' ? 'loan applications' : 'transactions'}. Watch for events!`;
+  learnEl.classList.add('visible');
+  document.getElementById('discovered').style.display = 'none';
+  document.getElementById('disclaimer').style.display = 'none';
+  document.getElementById('zone-label').classList.remove('visible');
+  document.getElementById('hub-prompt').classList.remove('visible');
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('npc-dialogue').classList.remove('visible');
+  hideDataPanel();
+
+  setTimeout(() => { if (gameState === 'miniGame') learnEl.classList.remove('visible'); }, 8000);
+}
+
+function exitMiniGame() {
+  const config = miniGameConfigs[activeMiniGameKey];
+  const hub = config?.hubRef?.();
+  gameState = 'main';
+  activeMiniGameKey = null;
+  document.getElementById('pc-hud').classList.remove('visible');
+  document.getElementById('pc-back').classList.remove('visible');
+  document.getElementById('pc-event').classList.remove('visible');
+  document.getElementById('pc-learn').classList.remove('visible');
+  document.getElementById('discovered').style.display = '';
+  document.getElementById('disclaimer').style.display = '';
+  document.getElementById('hud').style.display = '';
+  // Reset HUD colors to default
+  const pcHud = document.getElementById('pc-hud');
+  pcHud.style.borderColor = 'rgba(0,212,170,0.3)';
+  pcHud.querySelector('.pc-stat-value').style.color = '#00d4aa';
+  if (hub) { player.x = hub.x + 100; player.y = hub.y + 100; }
+}
+
+function miniGameLoop(time) {
+  const config = miniGameConfigs[activeMiniGameKey];
+  if (!config) return;
+  const dt = Math.min(time - lastTime, 33);
+  lastTime = time;
+
+  // Movement
+  let dx = 0, dy = 0;
+  if (keys['w'] || keys['arrowup']) { dy = -1; mgPlayer.dir = 2; }
+  if (keys['s'] || keys['arrowdown']) { dy = 1; mgPlayer.dir = 0; }
+  if (keys['a'] || keys['arrowleft']) { dx = -1; mgPlayer.dir = 1; }
+  if (keys['d'] || keys['arrowright']) { dx = 1; mgPlayer.dir = 3; }
+  mgPlayer.moving = dx !== 0 || dy !== 0;
+  if (mgPlayer.moving) {
+    const len = Math.sqrt(dx*dx+dy*dy); dx /= len; dy /= len;
+    const spd = keys['shift'] ? 5.5 : 3.5;
+    let blocked = false;
+    const nx = mgPlayer.x + dx*spd, ny = mgPlayer.y + dy*spd;
+    for (const b of mgBuildings) {
+      if (Math.abs(nx - b.x) < b.w/2+12 && Math.abs(ny - b.y) < b.h/2+12) { blocked = true; break; }
+    }
+    if (!blocked) { mgPlayer.x += dx*spd; mgPlayer.y += dy*spd; }
+    mgPlayer.x = Math.max(20, Math.min(config.worldW-20, mgPlayer.x));
+    mgPlayer.y = Math.max(20, Math.min(config.worldH-20, mgPlayer.y));
+    mgPlayer.bobPhase += keys['shift'] ? 0.3 : 0.2;
+    mgPlayer.frameTimer++;
+    if (mgPlayer.frameTimer > 8) { mgPlayer.frame = (mgPlayer.frame+1)%4; mgPlayer.frameTimer = 0; }
+  }
+
+  // Jump
+  if (mgPlayer.isJumping) {
+    mgPlayer.jumpVel += 0.5; mgPlayer.jumpZ += mgPlayer.jumpVel;
+    if (mgPlayer.jumpZ >= 0) { mgPlayer.jumpZ = 0; mgPlayer.jumpVel = 0; mgPlayer.isJumping = false; }
+  }
+
+  // Camera
+  const camTx = mgPlayer.x - canvas.width/2, camTy = mgPlayer.y - canvas.height/2;
+  mgCamera.x += (camTx - mgCamera.x) * 0.08;
+  mgCamera.y += (camTy - mgCamera.y) * 0.08;
+  mgCamera.x = Math.max(0, Math.min(config.worldW - canvas.width, mgCamera.x));
+  mgCamera.y = Math.max(0, Math.min(config.worldH - canvas.height, mgCamera.y));
+
+  // Effects
+  mgEffects = mgEffects.filter(e => !e.expiry || time < e.expiry);
+  let revMult = 1, volMult = 1, speedMult = 1, pauseAll = false;
+  const blockedTypes = new Set();
+  for (const eff of mgEffects) {
+    if (eff.revMult && !eff.revMultType) revMult *= eff.revMult;
+    if (eff.volMult && !eff.volMultType) volMult *= eff.volMult;
+    if (eff.speedMult) speedMult *= eff.speedMult;
+    if (eff.pauseAll) pauseAll = true;
+    if (eff.blockType) blockedTypes.add(eff.blockType);
+  }
+
+  // Transactions
+  let revenueThisFrame = 0;
+  if (!pauseAll) {
+    for (const b of mgBuildings) {
+      const dist = Math.hypot(mgPlayer.x - b.x, mgPlayer.y - b.y);
+      b.active = dist < 100;
+      if (b.active && !blockedTypes.has(b.type)) {
+        const interval = b.txnInterval / (speedMult * volMult);
+        if (time - b.lastTxnTime > interval) {
+          b.lastTxnTime = time;
+          const txnVal = Math.floor(b.txnMin + Math.random()*(b.txnMax - b.txnMin));
+          const finalVal = Math.floor(txnVal * revMult);
+          mgRevenue += finalVal; mgTransactions++; revenueThisFrame += finalVal;
+          mgFloatingTxns.push({ x: b.x+(Math.random()-0.5)*40, y: b.y-b.h/2-10, value: finalVal, color: b.color, life: 60, vy: -1.5 });
+        }
+      }
+    }
+  }
+
+  // Revenue rate
+  mgRevenueHistory.push({ time, amount: revenueThisFrame });
+  mgRevenueHistory = mgRevenueHistory.filter(h => time - h.time < 3000);
+  mgRevenueRate = Math.floor(mgRevenueHistory.reduce((s,h) => s+h.amount, 0) / 3);
+  mgFloatingTxns = mgFloatingTxns.filter(ft => { ft.y += ft.vy; ft.life--; return ft.life > 0; });
+
+  // Events
+  if (!mgActiveEvent && time - mgLastEventTime > 20000 + Math.random()*15000) {
+    mgLastEventTime = time;
+    const evt = config.events[Math.floor(Math.random()*config.events.length)];
+    mgActiveEvent = { ...evt, startTime: time };
+    document.getElementById('pc-event-title').textContent = evt.title;
+    document.getElementById('pc-event-desc').textContent = evt.desc;
+    const choicesDiv = document.getElementById('pc-event-choices');
+    choicesDiv.innerHTML = '';
+    evt.choices.forEach((choice, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'pc-event-btn';
+      btn.innerHTML = `<strong>${choice.label}</strong><br><span style="font-size:11px;color:#aaa">${choice.desc}</span>`;
+      btn.onclick = () => applyMgEventChoice(i);
+      choicesDiv.appendChild(btn);
+    });
+    document.getElementById('pc-event').classList.add('visible');
+  }
+  if (mgActiveEvent) {
+    const remaining = Math.max(0, 10 - (time - mgActiveEvent.startTime)/1000);
+    document.getElementById('pc-event-timer').textContent = `Time remaining: ${Math.ceil(remaining)}s`;
+    if (remaining <= 0) applyMgEventChoice(0);
+  }
+
+  // HUD
+  document.getElementById('pc-revenue').textContent = '$' + mgRevenue.toLocaleString();
+  document.getElementById('pc-txns').textContent = mgTransactions.toLocaleString();
+  document.getElementById('pc-rate').textContent = '$' + mgRevenueRate.toLocaleString() + '/s';
+
+  // === DRAW ===
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = config.skyColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Ground blocks
+  for (let bx = 0; bx < Math.ceil(config.worldW/400); bx++) {
+    for (let by = 0; by < Math.ceil(config.worldH/400); by++) {
+      const gx = bx*400+25 - mgCamera.x, gy = by*400+25 - mgCamera.y;
+      if (gx+350 < 0 || gx > canvas.width || gy+350 < 0 || gy > canvas.height) continue;
+      ctx.fillStyle = config.groundColor; ctx.fillRect(gx, gy, 350, 350);
+      const darkerGround = config.groundColor.replace(/[0-9a-f]{2}/gi, m => Math.max(0,parseInt(m,16)-8).toString(16).padStart(2,'0'));
+      ctx.fillStyle = darkerGround; ctx.fillRect(gx+8, gy+8, 334, 334);
+    }
+  }
+
+  // Roads
+  for (const road of mgRoads) {
+    if (road.horizontal !== undefined && road.horizontal) {
+      const ry = road.y - mgCamera.y;
+      if (ry < -30 || ry > canvas.height+30) continue;
+      ctx.fillStyle = config.roadColor; ctx.fillRect(0, ry-20, canvas.width, 40);
+      ctx.strokeStyle = config.playerColor + '40'; ctx.lineWidth = 2; ctx.setLineDash([20,15]);
+      ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(canvas.width, ry); ctx.stroke(); ctx.setLineDash([]);
+    } else {
+      const rx = road.x - mgCamera.x;
+      if (rx < -30 || rx > canvas.width+30) continue;
+      ctx.fillStyle = config.roadColor; ctx.fillRect(rx-20, 0, 40, canvas.height);
+      ctx.strokeStyle = config.playerColor + '40'; ctx.lineWidth = 2; ctx.setLineDash([20,15]);
+      ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, canvas.height); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+
+  // Lamps
+  for (const lamp of mgLamps) {
+    const lx = lamp.x - mgCamera.x, ly = lamp.y - mgCamera.y;
+    if (lx < -20 || lx > canvas.width+20 || ly < -30 || ly > canvas.height+20) continue;
+    ctx.fillStyle = '#4a4a5a'; ctx.fillRect(lx-2, ly-18, 4, 22);
+    ctx.fillStyle = config.playerColor + '25';
+    ctx.beginPath(); ctx.arc(lx, ly-20, 12, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = config.playerColor;
+    ctx.beginPath(); ctx.arc(lx, ly-20, 3, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Buildings & player (depth sorted)
+  const sorted = [...mgBuildings].sort((a,b) => a.y - b.y);
+  let playerDrawn = false;
+  for (const b of sorted) {
+    if (!playerDrawn && b.y >= mgPlayer.y) { drawMgPlayer(time, config); playerDrawn = true; }
+    drawMgBuilding(b, time, config);
+  }
+  if (!playerDrawn) drawMgPlayer(time, config);
+
+  // Floating transactions
+  for (const ft of mgFloatingTxns) {
+    const ftx = ft.x - mgCamera.x, fty = ft.y - mgCamera.y;
+    ctx.globalAlpha = ft.life / 60;
+    ctx.fillStyle = ft.color; ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('+$' + ft.value, ftx, fty); ctx.textAlign = 'left';
+  }
+  ctx.globalAlpha = 1;
+
+  // Effects bar
+  if (mgEffects.length > 0) {
+    const barX = canvas.width-210, barY = canvas.height - 30*mgEffects.length - 50;
+    ctx.fillStyle = 'rgba(10,10,30,0.85)'; ctx.beginPath(); ctx.roundRect(barX, barY, 200, 30*mgEffects.length+10, 8); ctx.fill();
+    mgEffects.forEach((eff, i) => {
+      const rem = eff.expiry ? Math.max(0, Math.ceil((eff.expiry-time)/1000)) : '';
+      ctx.fillStyle = config.playerColor; ctx.font = '11px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText(`${eff.label || 'Effect'} ${rem ? rem+'s' : ''}`, canvas.width-20, barY+20+30*i);
+    });
+    ctx.textAlign = 'left';
+  }
+
+  // Minimap
+  mmCtx.fillStyle = config.skyColor; mmCtx.fillRect(0, 0, 180, 120);
+  const msx = 180/config.worldW, msy = 120/config.worldH;
+  for (const b of mgBuildings) {
+    mmCtx.fillStyle = b.active ? b.color : b.color+'50';
+    mmCtx.beginPath(); mmCtx.arc(b.x*msx, b.y*msy, b.active ? 3 : 2, 0, Math.PI*2); mmCtx.fill();
+  }
+  mmCtx.strokeStyle = 'rgba(255,255,255,0.3)'; mmCtx.lineWidth = 1;
+  mmCtx.strokeRect(mgCamera.x*msx, mgCamera.y*msy, canvas.width*msx, canvas.height*msy);
+  mmCtx.fillStyle = config.playerColor;
+  mmCtx.beginPath(); mmCtx.arc(mgPlayer.x*msx, mgPlayer.y*msy, 3, 0, Math.PI*2); mmCtx.fill();
+
+  // Vignette
+  const vigGrad3 = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.height*0.4, canvas.width/2, canvas.height/2, canvas.height*0.9);
+  vigGrad3.addColorStop(0, 'transparent'); vigGrad3.addColorStop(1, 'rgba(0,0,0,0.3)');
+  ctx.fillStyle = vigGrad3; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (pauseAll) {
+    ctx.fillStyle = 'rgba(255,50,50,0.08)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#f87171'; ctx.font = 'bold 24px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('PROCESSING...', canvas.width/2, 80); ctx.textAlign = 'left';
+  }
+}
+
+function applyMgEventChoice(index) {
+  if (!mgActiveEvent) return;
+  const choice = mgActiveEvent.choices[index];
+  const eff = choice.effect;
+  if (eff.cost) { if (mgRevenue >= eff.cost) mgRevenue -= eff.cost; else { document.getElementById('pc-event').classList.remove('visible'); mgActiveEvent = null; return; } }
+  if (eff.bonus) mgRevenue += eff.bonus;
+  if (eff.riskLoss && Math.random() < eff.riskChance) {
+    mgRevenue = Math.max(0, mgRevenue - eff.riskLoss);
+    mgFloatingTxns.push({ x: mgPlayer.x, y: mgPlayer.y-30, value: -eff.riskLoss, color: '#f87171', life: 90, vy: -1 });
+  }
+  if (eff.duration) mgEffects.push({ ...eff, expiry: performance.now() + eff.duration, label: choice.label });
+  document.getElementById('pc-event').classList.remove('visible');
+  mgActiveEvent = null;
+}
+
+function drawMgBuilding(b, time, config) {
+  const bx = b.x - mgCamera.x, by = b.y - mgCamera.y;
+  if (bx < -b.w-20 || bx > canvas.width+b.w+20 || by < -b.h-40 || by > canvas.height+b.h+20) return;
+  const hw = b.w/2, hh = b.h/2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(bx-hw+4, by-hh+4, b.w, b.h);
+  const grad = ctx.createLinearGradient(bx-hw, by-hh, bx+hw, by+hh);
+  grad.addColorStop(0, b.colorDark); grad.addColorStop(0.5, b.color); grad.addColorStop(1, b.colorDark);
+  ctx.fillStyle = grad; ctx.beginPath(); ctx.roundRect(bx-hw, by-hh, b.w, b.h, 6); ctx.fill();
+
+  if (b.active) {
+    const gGrad = ctx.createRadialGradient(bx, by, 0, bx, by, b.w);
+    gGrad.addColorStop(0, b.color+'30'); gGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = gGrad; ctx.beginPath(); ctx.arc(bx, by, b.w, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = b.color; ctx.lineWidth = 2; ctx.globalAlpha = 0.5+Math.sin(time*0.005)*0.3;
+    ctx.beginPath(); ctx.roundRect(bx-hw-2, by-hh-2, b.w+4, b.h+4, 8); ctx.stroke(); ctx.globalAlpha = 1;
+  }
+
+  const wCols = Math.floor(b.w/20), wRows = Math.floor(b.h/20);
+  for (let wy = 0; wy < wRows; wy++) {
+    for (let wx = 0; wx < wCols; wx++) {
+      const wa = 0.15+Math.sin(time*0.004+wx*2+wy*3)*0.1;
+      ctx.fillStyle = b.active ? `rgba(255,255,200,${wa+0.15})` : `rgba(255,255,255,${wa})`;
+      ctx.fillRect(bx-hw+8+wx*18, by-hh+8+wy*18, 10, 10);
+    }
+  }
+
+  ctx.fillStyle = b.color; ctx.fillRect(bx-hw, by-hh, b.w, 3);
+  ctx.font = b.type === 'gpu' || b.type === 'warehouse' || b.type === 'corporate' || b.type === 'partner' ? '20px sans-serif' : '16px sans-serif';
+  ctx.textAlign = 'center'; ctx.fillText(b.icon, bx, by+5);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 10px "Segoe UI", system-ui, sans-serif'; ctx.fillText(b.name, bx, by-hh-8);
+  ctx.fillStyle = b.color; ctx.font = '8px "Segoe UI", system-ui, sans-serif'; ctx.fillText(b.btLabel || '', bx, by+hh+14);
+  ctx.textAlign = 'left';
+}
+
+function drawMgPlayer(time, config) {
+  const sx = mgPlayer.x - mgCamera.x, sy = mgPlayer.y - mgCamera.y + mgPlayer.jumpZ;
+  const bob = mgPlayer.moving ? Math.sin(mgPlayer.bobPhase)*2 : 0;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath();
+  ctx.ellipse(sx, mgPlayer.y - mgCamera.y + 18, 10, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.save(); ctx.translate(sx, sy + bob);
+
+  ctx.fillStyle = config.playerColor; ctx.fillRect(-8, -4, 16, 18);
+  ctx.fillStyle = '#fcd5b0'; ctx.beginPath(); ctx.arc(0, -12, 9, 0, Math.PI*2); ctx.fill();
+  const eo = [[0,1],[-1,0],[0,-1],[1,0]][mgPlayer.dir];
+  ctx.fillStyle = '#2d1f3d';
+  ctx.beginPath(); ctx.arc(-3+eo[0], -13+eo[1], 1.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(3+eo[0], -13+eo[1], 1.5, 0, Math.PI*2); ctx.fill();
+
+  const legP = mgPlayer.moving ? Math.sin(mgPlayer.bobPhase*2)*4 : 0;
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(-6, 14, 5, 8+legP); ctx.fillRect(1, 14, 5, 8-legP);
+
+  ctx.fillStyle = config.playerColor + '25'; ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+// Handle ESC for mini-game exit
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && gameState === 'miniGame') exitMiniGame();
+});
 
 requestAnimationFrame(gameLoop);
 </script>
