@@ -4062,7 +4062,7 @@ function updateParticles(particles) {
   });
 }
 
-function drawParticles(particles) {
+function mgDrawParticles(particles) {
   for (const p of particles) {
     ctx.globalAlpha = Math.min(1, p.life / 20);
     ctx.fillStyle = p.color || '#fff';
@@ -4244,7 +4244,7 @@ const miniGameHandlers = {
         drawTextCentered('Best Streak: ' + s.maxStreak + 'x', cx, cy + 30, '24px "Segoe UI", system-ui, sans-serif', '#c084fc');
         drawTextCentered('Answered: ' + s.qIndex + '/' + s.questions.length, cx, cy + 70, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
         drawTextCentered('Press ESC to exit', cx, cy + 130, '18px "Segoe UI", system-ui, sans-serif', '#888');
-        drawParticles(s.particles);
+        mgDrawParticles(s.particles);
         drawFloatingTexts(s.floats);
 
         // HUD
@@ -4371,7 +4371,7 @@ const miniGameHandlers = {
         ctx.globalAlpha = 1;
       }
 
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
       drawFloatingTexts(s.floats);
 
       // Instructions at bottom
@@ -4499,7 +4499,7 @@ const miniGameHandlers = {
         drawTextCentered('Press ESC to exit', canvas.width / 2, canvas.height / 2 + 130,
           '18px "Segoe UI", system-ui, sans-serif', '#888');
         s.particles = updateParticles(s.particles);
-        drawParticles(s.particles);
+        mgDrawParticles(s.particles);
         s.floats = updateFloatingTexts(s.floats);
         drawFloatingTexts(s.floats);
 
@@ -4656,7 +4656,7 @@ const miniGameHandlers = {
         ctx.fillText('\u2764\uFE0F', 15 + i * 28, canvas.height - 20);
       }
 
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
       drawFloatingTexts(s.floats);
 
       // HUD
@@ -4750,7 +4750,7 @@ const miniGameHandlers = {
         drawTextCentered('Score: ' + s.score, cx, cy, 'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
         drawTextCentered('Reached Round ' + s.round, cx, cy + 40, '22px "Segoe UI", system-ui, sans-serif', '#60a5fa');
         drawTextCentered('Press ESC to exit', cx, cy + 100, '18px "Segoe UI", system-ui, sans-serif', '#888');
-        drawParticles(s.particles);
+        mgDrawParticles(s.particles);
         drawFloatingTexts(s.floats);
         document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
         document.getElementById('pc-txns').textContent = s.round + '';
@@ -4851,7 +4851,7 @@ const miniGameHandlers = {
       drawTextCentered('Round ' + s.round + ' - Sequence Length: ' + s.sequence.length,
         cx, 40, '18px "Segoe UI", system-ui, sans-serif', '#aaa');
 
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
       drawFloatingTexts(s.floats);
 
       // HUD
@@ -4970,7 +4970,7 @@ const miniGameHandlers = {
         drawTextCentered('Transfers Routed: ' + s.totalRouted, cx, cy + 40, '22px "Segoe UI", system-ui, sans-serif', '#9fe870');
         drawTextCentered('Best Streak: ' + s.maxStreak + 'x', cx, cy + 75, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
         drawTextCentered('Press ESC to exit', cx, cy + 130, '18px "Segoe UI", system-ui, sans-serif', '#888');
-        drawParticles(s.particles);
+        mgDrawParticles(s.particles);
         drawFloatingTexts(s.floats);
         document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
         document.getElementById('pc-txns').textContent = s.maxStreak + 'x';
@@ -5085,7 +5085,7 @@ const miniGameHandlers = {
         drawTextCentered(s.streak + 'x STREAK!', cx, 70, 'bold 20px "Segoe UI", system-ui, sans-serif', '#fbbf24');
       }
 
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
       drawFloatingTexts(s.floats);
 
       ctx.textAlign = 'left';
@@ -5230,7 +5230,7 @@ const miniGameHandlers = {
           cx, cy + 25, 'bold 24px "Segoe UI", system-ui, sans-serif', profitColor);
         drawTextCentered('Trades: ' + s.trades.length, cx, cy + 65, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
         drawTextCentered('Press ESC to exit', cx, cy + 120, '18px "Segoe UI", system-ui, sans-serif', '#888');
-        drawParticles(s.particles);
+        mgDrawParticles(s.particles);
         drawFloatingTexts(s.floats);
         document.getElementById('pc-revenue').textContent = '$' + Math.floor(s.cash).toLocaleString();
         document.getElementById('pc-txns').textContent = '0';
@@ -5437,7 +5437,7 @@ const miniGameHandlers = {
       ctx.fillText(s.currentQuote, cx, canvas.height - 20);
       ctx.textAlign = 'left';
 
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
       drawFloatingTexts(s.floats);
 
       // HUD
@@ -5542,7 +5542,7 @@ const miniGameHandlers = {
         drawTextCentered('Distance: ' + Math.floor(s.distance) + 'm', cx, canvas.height / 2 + 40, '22px "Segoe UI", system-ui, sans-serif', '#ffe600');
         drawTextCentered('Top Speed: ' + s.speed.toFixed(1), cx, canvas.height / 2 + 75, '18px "Segoe UI", system-ui, sans-serif', '#aaa');
         drawTextCentered('Press ESC to exit', cx, canvas.height / 2 + 130, '18px "Segoe UI", system-ui, sans-serif', '#888');
-        drawParticles(s.particles);
+        mgDrawParticles(s.particles);
         drawFloatingTexts(s.floats);
         document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
         document.getElementById('pc-txns').textContent = s.speed.toFixed(1);
@@ -5772,7 +5772,7 @@ const miniGameHandlers = {
       // Distance
       drawTextCentered(Math.floor(s.distance) + 'm', cx, canvas.height - 25, '14px "Segoe UI", system-ui, sans-serif', '#aaa');
 
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
       drawFloatingTexts(s.floats);
 
       // HUD
@@ -5854,7 +5854,7 @@ const miniGameHandlers = {
         drawTextCentered('Score: ' + s.score, cx, cy, 'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
         drawTextCentered('Tasks Processed: ' + s.tasksProcessed, cx, cy + 40, '22px "Segoe UI", system-ui, sans-serif', '#22d3ee');
         drawTextCentered('Press ESC to exit', cx, cy + 100, '18px "Segoe UI", system-ui, sans-serif', '#888');
-        drawParticles(s.particles);
+        mgDrawParticles(s.particles);
         drawFloatingTexts(s.floats);
         document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
         document.getElementById('pc-txns').textContent = '0%';
@@ -5996,7 +5996,7 @@ const miniGameHandlers = {
       drawTextCentered('Score: ' + s.score + '  |  Tasks: ' + s.tasksProcessed + '  |  Expired: ' + s.tasksExpired,
         cx, instrY + 30, '14px "Segoe UI", system-ui, sans-serif', '#aaa');
 
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
       drawFloatingTexts(s.floats);
 
       // HUD
@@ -6200,7 +6200,7 @@ const miniGameHandlers = {
       }
 
       drawFloatingTexts(s.floats);
-      drawParticles(s.particles);
+      mgDrawParticles(s.particles);
 
       // Minimap - progress bar
       mmCtx.fillStyle = '#0a1a14';
