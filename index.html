@@ -324,7 +324,8 @@ window.addEventListener('keydown', e => {
     if (gameState === 'paymentCity') {
       if (!pcPlayer.isJumping) { pcPlayer.isJumping = true; pcPlayer.jumpVel = -9; }
     } else if (gameState === 'miniGame') {
-      if (!mgPlayer.isJumping) { mgPlayer.isJumping = true; mgPlayer.jumpVel = -9; }
+      const handler = miniGameHandlers[activeMiniGameKey];
+      if (handler && handler.onSpace) handler.onSpace();
     } else if (!player.isJumping) {
       player.isJumping = true;
       player.jumpVel = superJumpActive ? -14 : -9;
@@ -362,6 +363,11 @@ window.addEventListener('keydown', e => {
       jumpCount = 1;
     }
     lastJumpTime = now;
+  }
+  // Mini-game key dispatch
+  if (gameState === 'miniGame') {
+    const handler = miniGameHandlers[activeMiniGameKey];
+    if (handler && handler.onKey) handler.onKey(e.key.toLowerCase(), e.key);
   }
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -4003,749 +4009,2353 @@ function drawCityPlayer(time) {
   ctx.restore();
 }
 
-// ===== GENERIC MINI-GAME ENGINE =====
-const miniGameConfigs = {
+// ===== MINI-GAME ENGINE =====
+
+// --- Shared Utilities ---
+function drawMiniGameBg(color1, color2) {
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, color1);
+  grad.addColorStop(1, color2);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawTextCentered(text, x, y, font, color) {
+  ctx.font = font;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillText(text, x + 2, y + 2);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.textAlign = 'left';
+}
+
+function updateFloatingTexts(floats) {
+  return floats.filter(f => {
+    f.y += f.vy || -1.5;
+    f.life--;
+    return f.life > 0;
+  });
+}
+
+function drawFloatingTexts(floats) {
+  for (const f of floats) {
+    ctx.globalAlpha = Math.min(1, f.life / 30);
+    ctx.font = f.font || 'bold 18px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillText(f.text, f.x + 1, f.y + 1);
+    ctx.fillStyle = f.color || '#fff';
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+}
+
+function updateParticles(particles) {
+  return particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.gravity) p.vy += p.gravity;
+    p.life--;
+    return p.life > 0;
+  });
+}
+
+function drawParticles(particles) {
+  for (const p of particles) {
+    ctx.globalAlpha = Math.min(1, p.life / 20);
+    ctx.fillStyle = p.color || '#fff';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r || 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawTimerBar(timeLeft, maxTime, color, y) {
+  const pct = Math.max(0, timeLeft / maxTime);
+  const bw = canvas.width * 0.6;
+  const bx = (canvas.width - bw) / 2;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.roundRect(bx, y, bw, 14, 7); ctx.fill();
+  ctx.fillStyle = pct < 0.25 ? '#ef4444' : color;
+  ctx.beginPath(); ctx.roundRect(bx, y, bw * pct, 14, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(bx, y, bw, 14, 7); ctx.stroke();
+}
+
+function drawProgressBar(x, y, w, h, pct, color) {
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, h / 2); ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.roundRect(x, y, w * Math.max(0, Math.min(1, pct)), h, h / 2); ctx.fill();
+}
+
+function spawnBurstParticles(particles, x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 3;
+    particles.push({
+      x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+      gravity: 0.05, life: 30 + Math.random() * 20, r: 2 + Math.random() * 3, color
+    });
+  }
+}
+
+// --- Mini-Game Meta (colors, HUD labels, instructions) ---
+const miniGameMeta = {
   nuBank: {
-    name: 'Digital Bank City', worldW: 2800, worldH: 2000,
-    playerColor: '#820ad1', skyColor: '#1a1028',
-    groundColor: '#2a1f3a', roadColor: '#3d2d50',
-    hubRef: () => companies.nu,
-    buildingTypes: {
-      branch: { label: 'Branch', icon: '\u{1F3E6}', color: '#820ad1', colorDark: '#581c87', txnMin: 50, txnMax: 200, txnInterval: 1000, sw: 80, sh: 60 },
-      atm: { label: 'ATM', icon: '\u{1F4B3}', color: '#a855f7', colorDark: '#7c3aed', txnMin: 10, txnMax: 80, txnInterval: 600, sw: 50, sh: 45 },
-      digital: { label: 'Digital Kiosk', icon: '\u{1F4F1}', color: '#c084fc', colorDark: '#9333ea', txnMin: 5, txnMax: 40, txnInterval: 400, sw: 55, sh: 45 },
-      corporate: { label: 'Corporate', icon: '\u{1F3E2}', color: '#6d28d9', colorDark: '#4c1d95', txnMin: 500, txnMax: 2000, txnInterval: 3000, sw: 100, sh: 75 },
-    },
-    buildings: [
-      { x:300, y:250, type:'branch', name:'Centro Branch' },{ x:700, y:200, type:'atm', name:'ATM Paulista' },
-      { x:1100, y:280, type:'digital', name:'Nu Kiosk' },{ x:1500, y:220, type:'branch', name:'Copacabana' },
-      { x:1900, y:260, type:'atm', name:'ATM Ipanema' },{ x:2300, y:200, type:'digital', name:'Mobile Hub' },
-      { x:350, y:600, type:'corporate', name:'Nu HQ' },{ x:800, y:700, type:'branch', name:'Bela Vista' },
-      { x:1200, y:650, type:'atm', name:'ATM Norte' },{ x:1600, y:600, type:'digital', name:'Pix Station' },
-      { x:2000, y:700, type:'branch', name:'Jardins' },{ x:2400, y:650, type:'atm', name:'ATM Sul' },
-      { x:400, y:1000, type:'digital', name:'App Corner' },{ x:900, y:1050, type:'branch', name:'Moema' },
-      { x:1400, y:1000, type:'corporate', name:'Tech Campus' },{ x:1900, y:1050, type:'digital', name:'QR Pay' },
-      { x:2500, y:1000, type:'branch', name:'Vila Madalena' },
-      { x:300, y:1400, type:'atm', name:'ATM West' },{ x:800, y:1450, type:'branch', name:'Pinheiros' },
-      { x:1300, y:1400, type:'digital', name:'NuPay' },{ x:1800, y:1450, type:'atm', name:'ATM East' },
-      { x:2300, y:1400, type:'branch', name:'Itaim' },{ x:500, y:1750, type:'digital', name:'Crypto Desk' },
-      { x:1100, y:1800, type:'branch', name:'Brooklin' },{ x:1700, y:1750, type:'atm', name:'ATM Central' },
-      { x:2200, y:1800, type:'corporate', name:'Data Center' },
-    ],
-    events: [
-      { title:'Credit Card Rush!', desc:'Black Friday is driving massive credit card transactions.', choices:[
-        { label:'Boost Limits', desc:'+80% volume for 20s', effect:{volMult:1.8,duration:20000} },
-        { label:'Play Safe', desc:'+30% volume, lower risk', effect:{volMult:1.3,duration:20000} }
-      ]},
-      { title:'Pix Integration', desc:'Central bank mandates instant Pix processing.', choices:[
-        { label:'Invest $800', desc:'+50% speed for 25s', effect:{cost:800,speedMult:1.5,duration:25000} },
-        { label:'Delay', desc:'ATMs offline 10s', effect:{blockType:'atm',duration:10000} }
-      ]},
-      { title:'Customer Milestone!', desc:'You just crossed 1 million customers in this city!', choices:[
-        { label:'Celebrate', desc:'Instant $2,000 bonus', effect:{bonus:2000} },
-        { label:'Reinvest', desc:'+40% revenue for 20s', effect:{revMult:1.4,duration:20000} }
-      ]},
-      { title:'Fraud Detection', desc:'Suspicious patterns detected in digital transactions.', choices:[
-        { label:'Investigate', desc:'Pause all 5s, avoid loss', effect:{pauseAll:true,duration:5000} },
-        { label:'Ignore', desc:'25% chance lose $1500', effect:{riskLoss:1500,riskChance:0.25} }
-      ]},
-    ]
+    name: 'Nu Finance Quiz',
+    bg1: '#820ad1', bg2: '#581c87',
+    labels: ['Score', 'Streak', 'Question'],
+    instruction: 'Answer finance trivia! Press 1/2/3/4 to pick an answer.',
+    hubRef: () => companies.nu
   },
   deliEmpire: {
-    name: 'Deli Empire', worldW: 2600, worldH: 1800,
-    playerColor: '#e85d04', skyColor: '#1a1510',
-    groundColor: '#2a2518', roadColor: '#4a3d28',
-    hubRef: () => companies.mama,
-    buildingTypes: {
-      deli: { label: 'Deli Counter', icon: '\u{1F969}', color: '#e85d04', colorDark: '#9a3412', txnMin: 15, txnMax: 60, txnInterval: 700, sw: 70, sh: 55 },
-      supermarket: { label: 'Supermarket', icon: '\u{1F6D2}', color: '#fb923c', colorDark: '#c2410c', txnMin: 100, txnMax: 400, txnInterval: 2000, sw: 95, sh: 70 },
-      warehouse: { label: 'Warehouse', icon: '\u{1F4E6}', color: '#78350f', colorDark: '#451a03', txnMin: 500, txnMax: 2000, txnInterval: 5000, sw: 110, sh: 80 },
-      truck: { label: 'Food Truck', icon: '\u{1F69A}', color: '#f97316', colorDark: '#ea580c', txnMin: 20, txnMax: 100, txnInterval: 900, sw: 65, sh: 50 },
-    },
-    buildings: [
-      { x:300, y:200, type:'deli', name:"Tony's Deli" },{ x:700, y:250, type:'truck', name:'Meatball Truck' },
-      { x:1100, y:200, type:'deli', name:'Fresh Cuts' },{ x:1500, y:260, type:'supermarket', name:'MegaMart' },
-      { x:1900, y:220, type:'deli', name:'Italian Corner' },{ x:2300, y:250, type:'truck', name:'Wrap Wagon' },
-      { x:350, y:550, type:'supermarket', name:'FoodCo' },{ x:800, y:600, type:'deli', name:'Mama\'s Own' },
-      { x:1200, y:550, type:'warehouse', name:'Central Depot' },{ x:1700, y:600, type:'truck', name:'Salad Cart' },
-      { x:2100, y:580, type:'deli', name:'Brooklyn Deli' },{ x:2500, y:550, type:'supermarket', name:'WholeFoods' },
-      { x:400, y:900, type:'truck', name:'BBQ Bus' },{ x:900, y:950, type:'deli', name:'Cheese Cave' },
-      { x:1400, y:900, type:'supermarket', name:'Costco Deli' },{ x:1900, y:950, type:'deli', name:'Olive Bar' },
-      { x:2400, y:900, type:'warehouse', name:'Cold Storage' },
-      { x:300, y:1250, type:'deli', name:'Pastrami Palace' },{ x:800, y:1300, type:'truck', name:'Soup Truck' },
-      { x:1300, y:1250, type:'deli', name:'Sausage Shack' },{ x:1800, y:1300, type:'supermarket', name:'Trader Joe' },
-      { x:2300, y:1250, type:'truck', name:'Pretzel Cart' },
-      { x:500, y:1550, type:'supermarket', name:'Kroger' },{ x:1100, y:1600, type:'deli', name:'Sub Station' },
-      { x:1700, y:1550, type:'warehouse', name:'Dist. Center' },{ x:2200, y:1600, type:'deli', name:'Pickle Barrel' },
-    ],
-    events: [
-      { title:'Holiday Catering Rush!', desc:'Thanksgiving orders are flooding in!', choices:[
-        { label:'All Hands on Deck', desc:'2x deli output for 20s', effect:{volMult:2,duration:20000} },
-        { label:'Prioritize Quality', desc:'+50% revenue per sale for 15s', effect:{revMult:1.5,duration:15000} }
-      ]},
-      { title:'Supply Chain Issue', desc:'Truck delivery delays affecting warehouses.', choices:[
-        { label:'Find Alternatives', desc:'$500 cost, keep running', effect:{cost:500} },
-        { label:'Wait It Out', desc:'Warehouses offline 12s', effect:{blockType:'warehouse',duration:12000} }
-      ]},
-      { title:'New Recipe Goes Viral!', desc:'Your signature meatball recipe is trending on social media!', choices:[
-        { label:'Capitalize', desc:'+60% volume for 25s', effect:{volMult:1.6,duration:25000} },
-        { label:'Cash Bonus', desc:'Instant $1,200', effect:{bonus:1200} }
-      ]},
-      { title:'Health Inspection', desc:'Surprise health inspection across all locations.', choices:[
-        { label:'Full Compliance', desc:'Pause 5s, avoid fine', effect:{pauseAll:true,duration:5000} },
-        { label:'Risk It', desc:'35% chance lose $1000', effect:{riskLoss:1000,riskChance:0.35} }
-      ]},
-    ]
+    name: "Mama's Kitchen Catch",
+    bg1: '#e85d04', bg2: '#9a3412',
+    labels: ['Score', 'Combo', 'Lives'],
+    instruction: 'A/D to move basket. Catch ingredients for the recipe, avoid rotten food!',
+    hubRef: () => companies.mama
   },
   chipFoundry: {
-    name: 'Chip Foundry', worldW: 3000, worldH: 2200,
-    playerColor: '#0066cc', skyColor: '#0a1628',
-    groundColor: '#1a2540', roadColor: '#2a3a5a',
-    hubRef: () => companies.asml,
-    buildingTypes: {
-      lithography: { label: 'EUV Station', icon: '\u{1F52C}', color: '#0066cc', colorDark: '#1e3a8a', txnMin: 1000, txnMax: 5000, txnInterval: 4000, sw: 100, sh: 75 },
-      cleanroom: { label: 'Clean Room', icon: '\u{1F9EA}', color: '#3b82f6', colorDark: '#1d4ed8', txnMin: 200, txnMax: 800, txnInterval: 1500, sw: 80, sh: 60 },
-      testing: { label: 'Test Lab', icon: '\u{1F4CA}', color: '#60a5fa', colorDark: '#2563eb', txnMin: 50, txnMax: 300, txnInterval: 1000, sw: 70, sh: 55 },
-      assembly: { label: 'Assembly', icon: '\u{2699}', color: '#1e40af', colorDark: '#1e3a5f', txnMin: 100, txnMax: 500, txnInterval: 1200, sw: 85, sh: 65 },
-    },
-    buildings: [
-      { x:300, y:280, type:'cleanroom', name:'CR Alpha' },{ x:750, y:220, type:'testing', name:'QA Lab 1' },
-      { x:1200, y:300, type:'lithography', name:'EUV Bay 1' },{ x:1700, y:250, type:'assembly', name:'Assembly A' },
-      { x:2200, y:280, type:'cleanroom', name:'CR Beta' },{ x:2700, y:220, type:'testing', name:'QA Lab 2' },
-      { x:400, y:650, type:'assembly', name:'Assembly B' },{ x:900, y:700, type:'lithography', name:'EUV Bay 2' },
-      { x:1400, y:650, type:'cleanroom', name:'CR Gamma' },{ x:1900, y:700, type:'testing', name:'Yield Lab' },
-      { x:2400, y:650, type:'assembly', name:'Packaging' },
-      { x:350, y:1050, type:'lithography', name:'High-NA EUV' },{ x:850, y:1100, type:'cleanroom', name:'CR Delta' },
-      { x:1350, y:1050, type:'testing', name:'Metrology' },{ x:1850, y:1100, type:'assembly', name:'Die Sort' },
-      { x:2350, y:1050, type:'lithography', name:'EUV Bay 3' },{ x:2800, y:1100, type:'cleanroom', name:'CR Epsilon' },
-      { x:400, y:1450, type:'testing', name:'Stress Test' },{ x:900, y:1500, type:'assembly', name:'Wire Bond' },
-      { x:1400, y:1450, type:'lithography', name:'DUV Bay' },{ x:1900, y:1500, type:'cleanroom', name:'CR Zeta' },
-      { x:2500, y:1450, type:'testing', name:'Burn-In' },
-      { x:300, y:1850, type:'assembly', name:'Final Test' },{ x:900, y:1900, type:'cleanroom', name:'CR Eta' },
-      { x:1500, y:1850, type:'lithography', name:'EUV Bay 4' },{ x:2100, y:1900, type:'assembly', name:'Ship Dock' },
-      { x:2700, y:1850, type:'testing', name:'Validation' },
-    ],
-    events: [
-      { title:'AI Chip Rush!', desc:'NVIDIA needs 50% more wafers for next-gen GPUs!', choices:[
-        { label:'Maximize Output', desc:'2x EUV volume for 20s', effect:{volMult:2,duration:20000} },
-        { label:'Premium Pricing', desc:'+60% revenue for 15s', effect:{revMult:1.6,duration:15000} }
-      ]},
-      { title:'Contamination Alert', desc:'Particle detected in clean room air supply.', choices:[
-        { label:'Full Shutdown', desc:'Pause all 8s, prevent loss', effect:{pauseAll:true,duration:8000} },
-        { label:'Partial Clean', desc:'30% chance lose $3000', effect:{riskLoss:3000,riskChance:0.3} }
-      ]},
-      { title:'EUV Upgrade Available', desc:'New optics module increases throughput significantly.', choices:[
-        { label:'Install ($2,000)', desc:'+45% speed for 30s', effect:{cost:2000,speedMult:1.45,duration:30000} },
-        { label:'Skip', desc:'No change', effect:{} }
-      ]},
-      { title:'Yield Breakthrough!', desc:'New process achieves record wafer yields!', choices:[
-        { label:'Scale Up', desc:'+40% all revenue for 25s', effect:{revMult:1.4,duration:25000} },
-        { label:'Cash Bonus', desc:'Instant $3,000', effect:{bonus:3000} }
-      ]},
-    ]
+    name: 'EUV Pattern Lab',
+    bg1: '#0066cc', bg2: '#1e3a8a',
+    labels: ['Score', 'Round', 'Sequence'],
+    instruction: 'Memorize the pattern! Arrow keys to move, Space to select.',
+    hubRef: () => companies.asml
   },
   transferHub: {
-    name: 'Transfer Hub', worldW: 2600, worldH: 1800,
-    playerColor: '#9fe870', skyColor: '#101a10',
-    groundColor: '#1a2a1a', roadColor: '#2a3a2a',
-    hubRef: () => companies.wise,
-    buildingTypes: {
-      exchange: { label: 'Exchange Office', icon: '\u{1F4B1}', color: '#9fe870', colorDark: '#4d7c0f', txnMin: 50, txnMax: 300, txnInterval: 900, sw: 75, sh: 60 },
-      bank: { label: 'Bank Partner', icon: '\u{1F3E6}', color: '#65a30d', colorDark: '#3f6212', txnMin: 200, txnMax: 1000, txnInterval: 2500, sw: 90, sh: 70 },
-      kiosk: { label: 'Mobile Kiosk', icon: '\u{1F4F2}', color: '#a3e635', colorDark: '#65a30d', txnMin: 10, txnMax: 80, txnInterval: 500, sw: 55, sh: 45 },
-      corporate: { label: 'Corporate Desk', icon: '\u{1F4BC}', color: '#4d7c0f', colorDark: '#365314', txnMin: 1000, txnMax: 5000, txnInterval: 5000, sw: 100, sh: 75 },
-    },
-    buildings: [
-      { x:300, y:200, type:'exchange', name:'EUR/USD Desk' },{ x:700, y:250, type:'kiosk', name:'Quick Send' },
-      { x:1100, y:200, type:'bank', name:'HSBC Partner' },{ x:1500, y:260, type:'exchange', name:'GBP Hub' },
-      { x:1900, y:220, type:'kiosk', name:'Wise App Point' },{ x:2300, y:250, type:'exchange', name:'JPY Desk' },
-      { x:350, y:550, type:'corporate', name:'Corporate HQ' },{ x:800, y:600, type:'exchange', name:'BRL Center' },
-      { x:1200, y:550, type:'bank', name:'Barclays' },{ x:1700, y:600, type:'kiosk', name:'Airport Kiosk' },
-      { x:2100, y:580, type:'exchange', name:'INR Desk' },{ x:2500, y:550, type:'bank', name:'Deutsche Bank' },
-      { x:400, y:900, type:'kiosk', name:'Border Point' },{ x:900, y:950, type:'exchange', name:'AUD Office' },
-      { x:1400, y:900, type:'corporate', name:'Treasury' },{ x:1900, y:950, type:'exchange', name:'CAD Desk' },
-      { x:2400, y:900, type:'bank', name:'Santander' },
-      { x:300, y:1250, type:'exchange', name:'SGD Hub' },{ x:800, y:1300, type:'kiosk', name:'Station Kiosk' },
-      { x:1300, y:1250, type:'bank', name:'Citi Partner' },{ x:1800, y:1300, type:'exchange', name:'CHF Desk' },
-      { x:2300, y:1250, type:'kiosk', name:'Mall Kiosk' },
-      { x:500, y:1550, type:'bank', name:'JP Morgan' },{ x:1100, y:1600, type:'exchange', name:'MXN Center' },
-      { x:1700, y:1550, type:'corporate', name:'Compliance' },{ x:2200, y:1600, type:'kiosk', name:'Uni Kiosk' },
-    ],
-    events: [
-      { title:'Remittance Surge!', desc:'Holiday season driving massive cross-border transfers!', choices:[
-        { label:'Scale Up', desc:'2x volume for 20s', effect:{volMult:2,duration:20000} },
-        { label:'Premium Rates', desc:'+50% revenue for 15s', effect:{revMult:1.5,duration:15000} }
-      ]},
-      { title:'Currency Volatility', desc:'Major FX fluctuation affecting exchange rates.', choices:[
-        { label:'Hedge Position', desc:'$600 cost, stable rates', effect:{cost:600} },
-        { label:'Ride It Out', desc:'25% chance lose $2000', effect:{riskLoss:2000,riskChance:0.25} }
-      ]},
-      { title:'New Corridor Opened!', desc:'Wise expands to 3 new countries.', choices:[
-        { label:'Invest ($1,500)', desc:'+50% kiosk volume 25s', effect:{cost:1500,volMult:1.5,duration:25000} },
-        { label:'Cash Bonus', desc:'Instant $1,000', effect:{bonus:1000} }
-      ]},
-      { title:'Regulatory Compliance', desc:'New KYC requirements for all transfers.', choices:[
-        { label:'Comply Now', desc:'Pause 5s, stay compliant', effect:{pauseAll:true,duration:5000} },
-        { label:'Delay', desc:'40% chance $1500 fine', effect:{riskLoss:1500,riskChance:0.4} }
-      ]},
-    ]
+    name: 'Currency Rush',
+    bg1: '#9fe870', bg2: '#4d7c0f',
+    labels: ['Score', 'Streak', 'Transfers'],
+    instruction: 'W/S to move router, Space to route transfers to the right currency!',
+    hubRef: () => companies.wise
   },
   insuranceEmpire: {
-    name: 'Insurance Empire', worldW: 3000, worldH: 2200,
-    playerColor: '#1e40af', skyColor: '#0a0f1e',
-    groundColor: '#1a2240', roadColor: '#2a3458',
-    hubRef: () => companies.berkshire,
-    buildingTypes: {
-      insurance: { label: 'Insurance Office', icon: '\u{1F3E2}', color: '#1e40af', colorDark: '#1e3a5f', txnMin: 200, txnMax: 800, txnInterval: 1500, sw: 85, sh: 65 },
-      railroad: { label: 'Railroad', icon: '\u{1F682}', color: '#60a5fa', colorDark: '#2563eb', txnMin: 500, txnMax: 2000, txnInterval: 3000, sw: 100, sh: 55 },
-      energy: { label: 'Energy Plant', icon: '\u{26A1}', color: '#fbbf24', colorDark: '#b45309', txnMin: 300, txnMax: 1500, txnInterval: 2500, sw: 95, sh: 70 },
-      retail: { label: 'Retail Store', icon: '\u{1F6CD}', color: '#f87171', colorDark: '#dc2626', txnMin: 50, txnMax: 200, txnInterval: 800, sw: 70, sh: 55 },
-    },
-    buildings: [
-      { x:300, y:280, type:'insurance', name:'GEICO HQ' },{ x:750, y:220, type:'retail', name:'See\'s Candies' },
-      { x:1200, y:300, type:'railroad', name:'BNSF Terminal' },{ x:1700, y:250, type:'insurance', name:'Gen Re' },
-      { x:2200, y:280, type:'energy', name:'BHE Solar' },{ x:2700, y:220, type:'retail', name:'Dairy Queen' },
-      { x:400, y:650, type:'energy', name:'PacifiCorp' },{ x:900, y:700, type:'insurance', name:'Nat. Indemnity' },
-      { x:1400, y:650, type:'railroad', name:'BNSF Yard' },{ x:1900, y:700, type:'retail', name:'Nebraska Furn.' },
-      { x:2400, y:650, type:'insurance', name:'Alleghany' },
-      { x:350, y:1050, type:'retail', name:'Pilot Travel' },{ x:850, y:1100, type:'energy', name:'BHE Wind' },
-      { x:1350, y:1050, type:'insurance', name:'GEICO West' },{ x:1850, y:1100, type:'railroad', name:'BNSF Hub' },
-      { x:2350, y:1050, type:'retail', name:'Fruit of Loom' },{ x:2800, y:1100, type:'energy', name:'NV Energy' },
-      { x:400, y:1450, type:'insurance', name:'GEICO East' },{ x:900, y:1500, type:'retail', name:'Duracell' },
-      { x:1400, y:1450, type:'energy', name:'BHE Gas' },{ x:1900, y:1500, type:'insurance', name:'Berkshire Re' },
-      { x:2500, y:1450, type:'railroad', name:'BNSF South' },
-      { x:300, y:1850, type:'retail', name:'Brooks Sports' },{ x:900, y:1900, type:'insurance', name:'GEICO South' },
-      { x:1500, y:1850, type:'energy', name:'BHE Hydro' },{ x:2100, y:1900, type:'railroad', name:'BNSF Coast' },
-      { x:2700, y:1850, type:'retail', name:'Precision Cast' },
-    ],
-    events: [
-      { title:'Hurricane Season!', desc:'Major hurricane approaching - insurance claims incoming!', choices:[
-        { label:'Raise Reserves', desc:'$2000 cost, +60% premium for 25s', effect:{cost:2000,revMult:1.6,duration:25000} },
-        { label:'Normal Ops', desc:'40% chance lose $3000', effect:{riskLoss:3000,riskChance:0.4} }
-      ]},
-      { title:'Rail Volume Surge', desc:'Record freight volumes across BNSF network!', choices:[
-        { label:'Add Cars', desc:'+80% railroad volume 20s', effect:{volMult:1.8,duration:20000} },
-        { label:'Cash Dividend', desc:'Instant $2,500', effect:{bonus:2500} }
-      ]},
-      { title:'Investment Opportunity', desc:'Buffett found an undervalued acquisition target.', choices:[
-        { label:'Acquire ($5,000)', desc:'+40% all revenue 30s', effect:{cost:5000,revMult:1.4,duration:30000} },
-        { label:'Pass', desc:'No change', effect:{} }
-      ]},
-      { title:'Energy Price Spike', desc:'Natural gas prices surging due to cold snap.', choices:[
-        { label:'Maximize Output', desc:'2x energy revenue 15s', effect:{revMult:2,duration:15000} },
-        { label:'Hedge', desc:'+30% steady for 25s', effect:{revMult:1.3,duration:25000} }
-      ]},
-    ]
+    name: "Buffett's Trading Floor",
+    bg1: '#1e40af', bg2: '#0a0f1e',
+    labels: ['Portfolio', 'Shares', 'Time'],
+    instruction: 'Space to Buy/Sell stocks. Time the market for maximum profit!',
+    hubRef: () => companies.berkshire
   },
   marketplaceTown: {
-    name: 'Marketplace Town', worldW: 3000, worldH: 2200,
-    playerColor: '#ffe600', skyColor: '#1a1800',
-    groundColor: '#2a2610', roadColor: '#3a3520',
-    hubRef: () => companies.meli,
-    buildingTypes: {
-      seller: { label: 'Seller Shop', icon: '\u{1F6CD}', color: '#ffe600', colorDark: '#a16207', txnMin: 30, txnMax: 150, txnInterval: 800, sw: 70, sh: 55 },
-      warehouse: { label: 'Warehouse', icon: '\u{1F4E6}', color: '#fbbf24', colorDark: '#b45309', txnMin: 200, txnMax: 1000, txnInterval: 2500, sw: 100, sh: 75 },
-      delivery: { label: 'Delivery Hub', icon: '\u{1F69A}', color: '#f59e0b', colorDark: '#d97706', txnMin: 50, txnMax: 200, txnInterval: 1000, sw: 80, sh: 60 },
-      fintech: { label: 'Mercado Pago', icon: '\u{1F4B3}', color: '#3b82f6', colorDark: '#1d4ed8', txnMin: 100, txnMax: 500, txnInterval: 1500, sw: 85, sh: 65 },
-    },
-    buildings: [
-      { x:300, y:280, type:'seller', name:'Electronics' },{ x:700, y:220, type:'seller', name:'Fashion' },
-      { x:1100, y:300, type:'warehouse', name:'Fulfillment 1' },{ x:1600, y:250, type:'delivery', name:'MELI Post' },
-      { x:2100, y:280, type:'seller', name:'Home & Garden' },{ x:2500, y:220, type:'fintech', name:'Pago Hub' },
-      { x:400, y:650, type:'fintech', name:'Pago Credit' },{ x:900, y:700, type:'seller', name:'Auto Parts' },
-      { x:1400, y:650, type:'delivery', name:'Flex Delivery' },{ x:1900, y:700, type:'seller', name:'Sports' },
-      { x:2400, y:650, type:'warehouse', name:'Fulfillment 2' },
-      { x:350, y:1050, type:'seller', name:'Books' },{ x:850, y:1100, type:'delivery', name:'Same Day' },
-      { x:1350, y:1050, type:'fintech', name:'Pago QR' },{ x:1850, y:1100, type:'seller', name:'Toys' },
-      { x:2350, y:1050, type:'warehouse', name:'Cold Storage' },{ x:2800, y:1100, type:'delivery', name:'MELI Air' },
-      { x:400, y:1450, type:'seller', name:'Beauty' },{ x:900, y:1500, type:'fintech', name:'Pago Invest' },
-      { x:1400, y:1450, type:'delivery', name:'Next Day' },{ x:1900, y:1500, type:'seller', name:'Pet Shop' },
-      { x:2500, y:1450, type:'seller', name:'Tools' },
-      { x:300, y:1850, type:'delivery', name:'Express Hub' },{ x:900, y:1900, type:'seller', name:'Groceries' },
-      { x:1500, y:1850, type:'warehouse', name:'Returns' },{ x:2100, y:1900, type:'fintech', name:'Pago Biz' },
-      { x:2700, y:1850, type:'seller', name:'Jewelry' },
-    ],
-    events: [
-      { title:'Buen Fin Sale!', desc:'Latin America\'s biggest shopping event is here!', choices:[
-        { label:'Max Capacity', desc:'2x all volume for 20s', effect:{volMult:2,duration:20000} },
-        { label:'Premium Sellers', desc:'+60% revenue for 15s', effect:{revMult:1.6,duration:15000} }
-      ]},
-      { title:'Logistics Challenge', desc:'Heavy rains disrupting delivery routes in Brazil.', choices:[
-        { label:'Reroute ($800)', desc:'Keep deliveries running', effect:{cost:800} },
-        { label:'Delay Deliveries', desc:'Delivery hubs offline 12s', effect:{blockType:'delivery',duration:12000} }
-      ]},
-      { title:'Mercado Pago Boom!', desc:'Digital payments adoption accelerating across the region!', choices:[
-        { label:'Expand', desc:'+80% fintech volume 25s', effect:{volMult:1.8,duration:25000} },
-        { label:'Cash Out', desc:'Instant $2,000', effect:{bonus:2000} }
-      ]},
-      { title:'Seller Fraud Alert', desc:'Counterfeit products detected on the marketplace.', choices:[
-        { label:'Full Audit', desc:'Pause 6s, protect trust', effect:{pauseAll:true,duration:6000} },
-        { label:'Quick Fix', desc:'30% chance lose $2000', effect:{riskLoss:2000,riskChance:0.3} }
-      ]},
-    ]
+    name: 'Delivery Dash',
+    bg1: '#ffe600', bg2: '#a16207',
+    labels: ['Score', 'Speed', 'Lives'],
+    instruction: 'Space to jump, S/Down to duck. Collect packages, avoid obstacles!',
+    hubRef: () => companies.meli
   },
   dataCenter: {
-    name: 'Data Center', worldW: 2800, worldH: 2000,
-    playerColor: '#06b6d4', skyColor: '#0a1520',
-    groundColor: '#152030', roadColor: '#253040',
-    hubRef: () => companies.nbis,
-    buildingTypes: {
-      server: { label: 'Server Rack', icon: '\u{1F5A5}', color: '#06b6d4', colorDark: '#0e7490', txnMin: 100, txnMax: 500, txnInterval: 1200, sw: 70, sh: 80 },
-      gpu: { label: 'GPU Cluster', icon: '\u{1F4A0}', color: '#22d3ee', colorDark: '#0891b2', txnMin: 500, txnMax: 3000, txnInterval: 3500, sw: 100, sh: 75 },
-      cooling: { label: 'Cooling Tower', icon: '\u{2744}', color: '#67e8f9', colorDark: '#06b6d4', txnMin: 20, txnMax: 100, txnInterval: 600, sw: 60, sh: 90 },
-      network: { label: 'Network Hub', icon: '\u{1F310}', color: '#0284c7', colorDark: '#075985', txnMin: 50, txnMax: 200, txnInterval: 800, sw: 75, sh: 55 },
-    },
-    buildings: [
-      { x:300, y:250, type:'server', name:'Rack A1' },{ x:700, y:200, type:'gpu', name:'H100 Cluster 1' },
-      { x:1100, y:280, type:'cooling', name:'Cooling North' },{ x:1500, y:220, type:'network', name:'Core Switch' },
-      { x:1900, y:260, type:'server', name:'Rack A2' },{ x:2300, y:200, type:'gpu', name:'H100 Cluster 2' },
-      { x:350, y:600, type:'network', name:'Edge Node' },{ x:800, y:700, type:'server', name:'Rack B1' },
-      { x:1200, y:650, type:'gpu', name:'Training Bay' },{ x:1600, y:600, type:'cooling', name:'Cooling East' },
-      { x:2000, y:700, type:'server', name:'Rack B2' },{ x:2400, y:650, type:'network', name:'Fiber Hub' },
-      { x:400, y:1000, type:'gpu', name:'Inference Bay' },{ x:900, y:1050, type:'cooling', name:'Cooling Central' },
-      { x:1400, y:1000, type:'server', name:'Rack C1' },{ x:1900, y:1050, type:'network', name:'Load Balancer' },
-      { x:2500, y:1000, type:'gpu', name:'H100 Cluster 3' },
-      { x:300, y:1400, type:'server', name:'Rack D1' },{ x:800, y:1450, type:'network', name:'CDN Node' },
-      { x:1300, y:1400, type:'cooling', name:'Cooling South' },{ x:1800, y:1450, type:'gpu', name:'ML Pipeline' },
-      { x:2300, y:1400, type:'server', name:'Rack D2' },
-      { x:500, y:1750, type:'network', name:'API Gateway' },{ x:1100, y:1800, type:'gpu', name:'H200 Cluster' },
-      { x:1700, y:1750, type:'cooling', name:'Cooling West' },{ x:2200, y:1800, type:'server', name:'Backup Rack' },
-    ],
-    events: [
-      { title:'AI Training Surge!', desc:'Major tech company needs emergency GPU capacity!', choices:[
-        { label:'Allocate All GPUs', desc:'2x GPU revenue for 20s', effect:{volMult:2,duration:20000} },
-        { label:'Premium Pricing', desc:'+70% revenue for 15s', effect:{revMult:1.7,duration:15000} }
-      ]},
-      { title:'Power Outage Risk', desc:'Grid instability threatening data center operations.', choices:[
-        { label:'Backup Generators', desc:'$1,200 cost, keep running', effect:{cost:1200} },
-        { label:'Risk It', desc:'35% chance total pause 10s', effect:{riskLoss:2000,riskChance:0.35} }
-      ]},
-      { title:'New GPU Delivery!', desc:'NVIDIA shipped a batch of next-gen GPUs!', choices:[
-        { label:'Install ($3,000)', desc:'+50% speed for 30s', effect:{cost:3000,speedMult:1.5,duration:30000} },
-        { label:'Sell for Cash', desc:'Instant $2,000', effect:{bonus:2000} }
-      ]},
-      { title:'Cooling System Upgrade', desc:'Advanced liquid cooling technology available.', choices:[
-        { label:'Upgrade ($1,000)', desc:'Cooling +80% output 25s', effect:{cost:1000,volMult:1.8,duration:25000} },
-        { label:'Skip', desc:'No change', effect:{} }
-      ]},
-    ]
+    name: 'GPU Command Center',
+    bg1: '#06b6d4', bg2: '#0e7490',
+    labels: ['Score', 'Uptime', 'Tasks'],
+    instruction: 'WASD to move cursor, Space to process tasks before they expire!',
+    hubRef: () => companies.nbis
   },
   loanEngine: {
-    name: 'Loan Engine', worldW: 2600, worldH: 1800,
-    playerColor: '#10b981', skyColor: '#0a1a14',
-    groundColor: '#1a2a20', roadColor: '#2a3a30',
-    hubRef: () => companies.pgy,
-    buildingTypes: {
-      bank: { label: 'Bank Branch', icon: '\u{1F3E6}', color: '#10b981', colorDark: '#047857', txnMin: 100, txnMax: 500, txnInterval: 1200, sw: 80, sh: 60 },
-      portal: { label: 'Online Portal', icon: '\u{1F4BB}', color: '#34d399', colorDark: '#059669', txnMin: 30, txnMax: 150, txnInterval: 600, sw: 65, sh: 50 },
-      risk: { label: 'Risk Center', icon: '\u{1F9E0}', color: '#6ee7b7', colorDark: '#10b981', txnMin: 200, txnMax: 1000, txnInterval: 2000, sw: 90, sh: 65 },
-      partner: { label: 'Partner Lender', icon: '\u{1F91D}', color: '#059669', colorDark: '#047857', txnMin: 500, txnMax: 2000, txnInterval: 3500, sw: 95, sh: 70 },
-    },
-    buildings: [
-      { x:300, y:200, type:'bank', name:'First National' },{ x:700, y:250, type:'portal', name:'QuickLoan.ai' },
-      { x:1100, y:200, type:'risk', name:'Risk Engine A' },{ x:1500, y:260, type:'bank', name:'Community Bank' },
-      { x:1900, y:220, type:'portal', name:'InstantApply' },{ x:2300, y:250, type:'partner', name:'SoFi Partner' },
-      { x:350, y:550, type:'partner', name:'Upgrade Inc.' },{ x:800, y:600, type:'bank', name:'Regional Credit' },
-      { x:1200, y:550, type:'portal', name:'LoanSnap' },{ x:1700, y:600, type:'risk', name:'AI Scoring' },
-      { x:2100, y:580, type:'bank', name:'Metro Bank' },{ x:2500, y:550, type:'portal', name:'EasyFund' },
-      { x:400, y:900, type:'risk', name:'Risk Engine B' },{ x:900, y:950, type:'partner', name:'Ally Partner' },
-      { x:1400, y:900, type:'bank', name:'Pacific Trust' },{ x:1900, y:950, type:'portal', name:'AutoLend.ai' },
-      { x:2400, y:900, type:'risk', name:'Fraud Detect' },
-      { x:300, y:1250, type:'portal', name:'BNPL Hub' },{ x:800, y:1300, type:'bank', name:'Heritage Bank' },
-      { x:1300, y:1250, type:'partner', name:'Marcus GS' },{ x:1800, y:1300, type:'risk', name:'Risk Engine C' },
-      { x:2300, y:1250, type:'bank', name:'Savings First' },
-      { x:500, y:1550, type:'partner', name:'Lending Club' },{ x:1100, y:1600, type:'portal', name:'HomeSnap.ai' },
-      { x:1700, y:1550, type:'risk', name:'ML Pipeline' },{ x:2200, y:1600, type:'bank', name:'Union Federal' },
-    ],
-    events: [
-      { title:'Refinancing Wave!', desc:'Rate cuts driving massive refinancing demand!', choices:[
-        { label:'Max Capacity', desc:'2x all volume for 20s', effect:{volMult:2,duration:20000} },
-        { label:'Premium Pricing', desc:'+60% fees for 15s', effect:{revMult:1.6,duration:15000} }
-      ]},
-      { title:'Default Spike', desc:'Rising delinquencies in a lending segment.', choices:[
-        { label:'Tighten Models', desc:'Pause 5s, prevent losses', effect:{pauseAll:true,duration:5000} },
-        { label:'Hold Steady', desc:'30% chance lose $2500', effect:{riskLoss:2500,riskChance:0.3} }
-      ]},
-      { title:'New Bank Partner!', desc:'Major bank wants to use Pagaya\'s AI network.', choices:[
-        { label:'Onboard ($1,500)', desc:'+50% volume 25s', effect:{cost:1500,volMult:1.5,duration:25000} },
-        { label:'Cash Bonus', desc:'Instant $1,200', effect:{bonus:1200} }
-      ]},
-      { title:'AI Model Upgrade', desc:'New model version improves approval rates by 15%.', choices:[
-        { label:'Deploy ($800)', desc:'+40% speed for 30s', effect:{cost:800,speedMult:1.4,duration:30000} },
-        { label:'Keep Current', desc:'No change', effect:{} }
-      ]},
-    ]
-  },
+    name: 'AI Loan Analyst',
+    bg1: '#10b981', bg2: '#047857',
+    labels: ['Score', 'Accuracy', 'Apps'],
+    instruction: 'D to Approve, A to Deny loan applications. Use the data wisely!',
+    hubRef: () => companies.pgy
+  }
 };
 
-// ===== GENERIC MINI-GAME STATE =====
-let mgRevenue = 0, mgTransactions = 0, mgRevenueRate = 0;
-let mgRevenueHistory = [], mgFloatingTxns = [], mgActiveEvent = null;
-let mgLastEventTime = 0, mgEffects = [];
-let mgCamera = { x: 0, y: 0 };
-let mgPlayer = { x: 0, y: 0, dir: 0, frame: 0, frameTimer: 0, moving: false, bobPhase: 0, jumpZ: 0, jumpVel: 0, isJumping: false };
-let mgBuildings = [];
-let mgRoads = [];
-let mgLamps = [];
+// --- Mini-Game State ---
+let mgState = {};
 
+// --- Mini-Game Handlers Registry ---
+const miniGameHandlers = {
+
+  // ============================================================
+  // 1. nuBank - "Nu Finance Quiz" (Trivia Quiz)
+  // ============================================================
+  nuBank: {
+    enter() {
+      const questions = [
+        { q: 'What does "APR" stand for?', options: ['Annual Percentage Rate', 'Applied Payment Ratio', 'Average Prime Rate', 'Accumulated Profit Return'], correct: 0 },
+        { q: 'Which country is Nu Holdings headquartered in?', options: ['Mexico', 'Brazil', 'Argentina', 'Colombia'], correct: 1 },
+        { q: 'What is a credit score range in the US?', options: ['0-500', '100-800', '300-850', '200-700'], correct: 2 },
+        { q: 'What does "IPO" stand for?', options: ['Internal Profit Operation', 'Initial Public Offering', 'Investment Portfolio Option', 'Indexed Price Output'], correct: 1 },
+        { q: 'What is compound interest?', options: ['Interest on principal only', 'Interest on interest + principal', 'A fixed interest rate', 'Government bond interest'], correct: 1 },
+        { q: 'Which is NOT a type of bank account?', options: ['Checking', 'Savings', 'Derivative', 'Money Market'], correct: 2 },
+        { q: 'What does FDIC insure up to per depositor?', options: ['$100,000', '$250,000', '$500,000', '$1,000,000'], correct: 1 },
+        { q: 'What is a fintech company?', options: ['A hardware manufacturer', 'A financial technology firm', 'A government agency', 'An accounting firm'], correct: 1 },
+        { q: 'What is market capitalization?', options: ['Total debt', 'Share price x shares outstanding', 'Annual revenue', 'Net income'], correct: 1 },
+        { q: 'What is a "bull market"?', options: ['Falling prices', 'Rising prices', 'Stable prices', 'Volatile prices'], correct: 1 },
+        { q: 'What does P/E ratio measure?', options: ['Profit / Expenses', 'Price / Earnings', 'Payment / Equity', 'Principal / Escrow'], correct: 1 },
+        { q: 'What is a digital wallet?', options: ['A physical wallet', 'Electronic payment storage', 'A bank vault', 'An ATM card'], correct: 1 },
+        { q: 'What is diversification?', options: ['Investing in one stock', 'Spreading investments across assets', 'Keeping cash only', 'Day trading'], correct: 1 },
+        { q: 'What currency does Brazil use?', options: ['Peso', 'Dollar', 'Real', 'Euro'], correct: 2 },
+        { q: 'What is a blockchain?', options: ['A type of bank', 'A distributed ledger', 'An interest rate', 'A credit card'], correct: 1 },
+        { q: 'What does ROI stand for?', options: ['Rate of Inflation', 'Return on Investment', 'Revenue of Industry', 'Risk of Insolvency'], correct: 1 },
+        { q: 'What is inflation?', options: ['Decrease in prices', 'Increase in money supply', 'General rise in price levels', 'Stock market crash'], correct: 2 },
+        { q: 'Which is a central bank?', options: ['Goldman Sachs', 'JPMorgan', 'Federal Reserve', 'Visa'], correct: 2 },
+        { q: 'What is a mutual fund?', options: ['A personal loan', 'Pooled investment vehicle', 'A single stock', 'A bank account type'], correct: 1 },
+        { q: 'What does KYC stand for?', options: ['Keep Your Cash', 'Know Your Customer', 'Key Yield Calculation', 'Knowledge for Your Credit'], correct: 1 },
+        { q: 'What is a bear market?', options: ['Rising prices 20%+', 'Falling prices 20%+', 'Sideways market', 'Market holiday'], correct: 1 },
+        { q: 'What is PIX in Brazil?', options: ['A stock exchange', 'An instant payment system', 'A credit card brand', 'A cryptocurrency'], correct: 1 },
+        { q: 'What is NuBank known as?', options: ['The largest crypto exchange', 'The largest digital bank outside Asia', 'A traditional bank', 'A hedge fund'], correct: 1 },
+        { q: 'What is liquidity?', options: ['Long-term debt', 'How easily assets convert to cash', 'Interest rate spread', 'Tax liability'], correct: 1 }
+      ];
+      // Shuffle
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+      mgState = {
+        questions,
+        qIndex: 0,
+        score: 0,
+        streak: 0,
+        maxStreak: 0,
+        answered: false,
+        answerCorrect: false,
+        selectedAnswer: -1,
+        answerTime: 0,
+        questionStartTime: performance.now(),
+        timePerQuestion: 12000,
+        floats: [],
+        particles: [],
+        gameOver: false,
+        flashAlpha: 0,
+        flashColor: '#00ff00'
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.nuBank;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      if (s.flashAlpha > 0) s.flashAlpha -= 0.03;
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      if (s.gameOver) {
+        drawTextCentered('QUIZ COMPLETE!', cx, cy - 80, 'bold 48px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+        drawTextCentered('Final Score: ' + s.score, cx, cy - 20, 'bold 36px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Best Streak: ' + s.maxStreak + 'x', cx, cy + 30, '24px "Segoe UI", system-ui, sans-serif', '#c084fc');
+        drawTextCentered('Answered: ' + s.qIndex + '/' + s.questions.length, cx, cy + 70, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
+        drawTextCentered('Press ESC to exit', cx, cy + 130, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        drawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+
+        // HUD
+        document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+        document.getElementById('pc-txns').textContent = s.maxStreak + 'x';
+        document.getElementById('pc-rate').textContent = s.qIndex + '/' + s.questions.length;
+
+        // Minimap summary
+        mmCtx.fillStyle = '#1a1028';
+        mmCtx.fillRect(0, 0, 180, 120);
+        mmCtx.fillStyle = '#c084fc';
+        mmCtx.font = 'bold 14px sans-serif';
+        mmCtx.textAlign = 'center';
+        mmCtx.fillText('Quiz Complete', 90, 30);
+        mmCtx.fillStyle = '#fff';
+        mmCtx.font = '12px sans-serif';
+        mmCtx.fillText('Score: ' + s.score, 90, 55);
+        mmCtx.fillText('Streak: ' + s.maxStreak + 'x', 90, 75);
+        mmCtx.textAlign = 'left';
+        return;
+      }
+
+      const q = s.questions[s.qIndex];
+      const elapsed = time - s.questionStartTime;
+      const timeLimit = Math.max(6000, s.timePerQuestion - s.qIndex * 250);
+      const timeLeft = s.answered ? timeLimit : timeLimit - elapsed;
+
+      if (!s.answered && timeLeft <= 0) {
+        s.answered = true;
+        s.answerCorrect = false;
+        s.selectedAnswer = -1;
+        s.streak = 0;
+        s.flashAlpha = 0.4;
+        s.flashColor = '#ff0000';
+        s.answerTime = time;
+        s.floats.push({ x: cx, y: cy - 140, text: 'TIME UP!', color: '#ef4444', life: 60, vy: -1 });
+      }
+
+      // Auto-advance after answer
+      if (s.answered && time - s.answerTime > 1500) {
+        s.qIndex++;
+        if (s.qIndex >= s.questions.length) {
+          s.gameOver = true;
+          spawnBurstParticles(s.particles, cx, cy, '#c084fc', 40);
+          spawnBurstParticles(s.particles, cx, cy, '#fbbf24', 30);
+          return;
+        }
+        s.answered = false;
+        s.selectedAnswer = -1;
+        s.questionStartTime = time;
+      }
+
+      // Timer bar
+      drawTimerBar(Math.max(0, timeLeft), timeLimit, '#c084fc', 20);
+
+      // Question number
+      drawTextCentered('Question ' + (s.qIndex + 1) + ' of ' + s.questions.length,
+        cx, 60, '16px "Segoe UI", system-ui, sans-serif', '#aaa');
+
+      // Question text
+      drawTextCentered(q.q, cx, 110, 'bold 26px "Segoe UI", system-ui, sans-serif', '#fff');
+
+      // Streak & multiplier
+      const mult = Math.min(5, 1 + Math.floor(s.streak / 2));
+      if (s.streak > 0) {
+        drawTextCentered(s.streak + ' streak! ' + mult + 'x multiplier',
+          cx, 150, 'bold 16px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+      }
+
+      // Answer boxes (2x2)
+      const boxW = Math.min(340, canvas.width * 0.38);
+      const boxH = 60;
+      const gap = 16;
+      const gridW = boxW * 2 + gap;
+      const startX = cx - gridW / 2;
+      const startY = cy - 20;
+
+      for (let i = 0; i < 4; i++) {
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const bx = startX + col * (boxW + gap);
+        const by = startY + row * (boxH + gap);
+
+        let bgColor = 'rgba(255,255,255,0.08)';
+        let textColor = '#fff';
+        if (s.answered) {
+          if (i === q.correct) {
+            bgColor = 'rgba(34,197,94,0.4)';
+            textColor = '#4ade80';
+          } else if (i === s.selectedAnswer && !s.answerCorrect) {
+            bgColor = 'rgba(239,68,68,0.4)';
+            textColor = '#f87171';
+          }
+        }
+
+        ctx.fillStyle = bgColor;
+        ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, 10); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, 10); ctx.stroke();
+
+        // Number badge
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath(); ctx.arc(bx + 24, by + boxH / 2, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = textColor;
+        ctx.font = 'bold 16px "Segoe UI", system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(i + 1), bx + 24, by + boxH / 2 + 6);
+
+        // Answer text
+        ctx.font = '15px "Segoe UI", system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = textColor;
+        const maxTextW = boxW - 56;
+        ctx.fillText(q.options[i].length > 35 ? q.options[i].substring(0, 33) + '..' : q.options[i], bx + 46, by + boxH / 2 + 5);
+      }
+      ctx.textAlign = 'left';
+
+      // Flash overlay
+      if (s.flashAlpha > 0) {
+        ctx.fillStyle = s.flashColor;
+        ctx.globalAlpha = s.flashAlpha * 0.15;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1;
+      }
+
+      drawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      // Instructions at bottom
+      if (!s.answered) {
+        drawTextCentered('Press 1, 2, 3, or 4 to answer', cx, canvas.height - 40,
+          '14px "Segoe UI", system-ui, sans-serif', '#888');
+      }
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+      document.getElementById('pc-txns').textContent = s.streak + 'x';
+      document.getElementById('pc-rate').textContent = (s.qIndex + 1) + '/' + s.questions.length;
+
+      // Minimap
+      mmCtx.fillStyle = '#1a1028';
+      mmCtx.fillRect(0, 0, 180, 120);
+      mmCtx.fillStyle = '#820ad1';
+      const pct = (s.qIndex + 1) / s.questions.length;
+      mmCtx.fillRect(10, 90, 160 * pct, 12);
+      mmCtx.strokeStyle = '#c084fc';
+      mmCtx.strokeRect(10, 90, 160, 12);
+      mmCtx.fillStyle = '#fff';
+      mmCtx.font = '11px sans-serif';
+      mmCtx.textAlign = 'center';
+      mmCtx.fillText('Score: ' + s.score, 90, 25);
+      mmCtx.fillText('Streak: ' + s.streak + 'x', 90, 45);
+      mmCtx.fillText('Q' + (s.qIndex + 1) + '/' + s.questions.length, 90, 65);
+      mmCtx.textAlign = 'left';
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.answered || s.gameOver) return;
+      const idx = ['1', '2', '3', '4'].indexOf(key);
+      if (idx === -1) return;
+      s.answered = true;
+      s.selectedAnswer = idx;
+      s.answerTime = performance.now();
+      const q = s.questions[s.qIndex];
+      const elapsed = performance.now() - s.questionStartTime;
+      if (idx === q.correct) {
+        s.answerCorrect = true;
+        s.streak++;
+        if (s.streak > s.maxStreak) s.maxStreak = s.streak;
+        const mult = Math.min(5, 1 + Math.floor(s.streak / 2));
+        const speedBonus = Math.max(0, Math.floor((1 - elapsed / 12000) * 50));
+        const pts = (100 + speedBonus) * mult;
+        s.score += pts;
+        s.flashAlpha = 0.5;
+        s.flashColor = '#00ff00';
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: '+' + pts, color: '#4ade80', life: 50, vy: -2 });
+        spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#4ade80', 12);
+      } else {
+        s.answerCorrect = false;
+        s.streak = 0;
+        s.flashAlpha = 0.4;
+        s.flashColor = '#ff0000';
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: 'WRONG!', color: '#ef4444', life: 50, vy: -2 });
+      }
+    },
+    onSpace() {}
+  },
+
+  // ============================================================
+  // 2. deliEmpire - "Mama's Kitchen Catch" (Catch/Collection)
+  // ============================================================
+  deliEmpire: {
+    enter() {
+      const recipes = [
+        { name: 'Meatball Sub', ingredients: ['beef', 'bread', 'cheese'], emoji: '\uD83E\uDD6A' },
+        { name: 'Caesar Salad', ingredients: ['lettuce', 'chicken', 'croutons'], emoji: '\uD83E\uDD57' },
+        { name: 'Pizza Slice', ingredients: ['dough', 'tomato', 'cheese'], emoji: '\uD83C\uDF55' },
+        { name: 'Pasta Bowl', ingredients: ['pasta', 'tomato', 'basil'], emoji: '\uD83C\uDF5D' },
+        { name: 'Grilled Cheese', ingredients: ['bread', 'cheese', 'butter'], emoji: '\uD83E\uDDC0' },
+        { name: 'Club Sandwich', ingredients: ['bread', 'turkey', 'bacon'], emoji: '\uD83E\uDD6A' },
+        { name: 'Burrito', ingredients: ['tortilla', 'beef', 'rice'], emoji: '\uD83C\uDF2F' },
+        { name: 'Ramen', ingredients: ['noodles', 'egg', 'pork'], emoji: '\uD83C\uDF5C' }
+      ];
+      const allIngredients = ['beef', 'bread', 'cheese', 'lettuce', 'chicken', 'croutons',
+        'dough', 'tomato', 'basil', 'pasta', 'butter', 'turkey', 'bacon',
+        'tortilla', 'rice', 'noodles', 'egg', 'pork'];
+      const ingredientEmoji = {
+        beef: '\uD83E\uDD69', bread: '\uD83C\uDF5E', cheese: '\uD83E\uDDC0', lettuce: '\uD83E\uDD6C',
+        chicken: '\uD83C\uDF57', croutons: '\uD83C\uDF5E', dough: '\uD83E\uDD68', tomato: '\uD83C\uDF45',
+        basil: '\uD83C\uDF3F', pasta: '\uD83C\uDF5D', butter: '\uD83E\uDDC8', turkey: '\uD83E\uDD83',
+        bacon: '\uD83E\uDD53', tortilla: '\uD83E\uDED4', rice: '\uD83C\uDF5A', noodles: '\uD83C\uDF5C',
+        egg: '\uD83E\uDD5A', pork: '\uD83E\uDD69'
+      };
+      const recipe = recipes[Math.floor(Math.random() * recipes.length)];
+      mgState = {
+        recipes, allIngredients, ingredientEmoji,
+        currentRecipe: recipe,
+        collected: [],
+        basketX: canvas.width / 2,
+        basketW: 80,
+        items: [],
+        spawnTimer: 0,
+        spawnInterval: 1200,
+        fallSpeed: 2,
+        score: 0,
+        combo: 0,
+        maxCombo: 0,
+        lives: 5,
+        level: 1,
+        recipesCompleted: 0,
+        floats: [],
+        particles: [],
+        gameOver: false,
+        groundY: canvas.height * 0.82
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.deliEmpire;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      if (s.gameOver) {
+        drawTextCentered('KITCHEN CLOSED!', canvas.width / 2, canvas.height / 2 - 60,
+          'bold 44px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+        drawTextCentered('Final Score: ' + s.score, canvas.width / 2, canvas.height / 2,
+          'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Recipes Completed: ' + s.recipesCompleted, canvas.width / 2, canvas.height / 2 + 40,
+          '22px "Segoe UI", system-ui, sans-serif', '#fb923c');
+        drawTextCentered('Best Combo: ' + s.maxCombo + 'x', canvas.width / 2, canvas.height / 2 + 75,
+          '20px "Segoe UI", system-ui, sans-serif', '#aaa');
+        drawTextCentered('Press ESC to exit', canvas.width / 2, canvas.height / 2 + 130,
+          '18px "Segoe UI", system-ui, sans-serif', '#888');
+        s.particles = updateParticles(s.particles);
+        drawParticles(s.particles);
+        s.floats = updateFloatingTexts(s.floats);
+        drawFloatingTexts(s.floats);
+
+        document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+        document.getElementById('pc-txns').textContent = s.maxCombo + 'x';
+        document.getElementById('pc-rate').textContent = '0';
+
+        mmCtx.fillStyle = '#1a1510';
+        mmCtx.fillRect(0, 0, 180, 120);
+        mmCtx.fillStyle = '#fb923c';
+        mmCtx.font = 'bold 14px sans-serif';
+        mmCtx.textAlign = 'center';
+        mmCtx.fillText('Game Over', 90, 30);
+        mmCtx.fillStyle = '#fff';
+        mmCtx.font = '12px sans-serif';
+        mmCtx.fillText('Score: ' + s.score, 90, 55);
+        mmCtx.fillText('Recipes: ' + s.recipesCompleted, 90, 75);
+        mmCtx.textAlign = 'left';
+        return;
+      }
+
+      // Move basket
+      const bSpeed = 7;
+      if (keys['a'] || keys['arrowleft']) s.basketX -= bSpeed;
+      if (keys['d'] || keys['arrowright']) s.basketX += bSpeed;
+      s.basketX = Math.max(s.basketW / 2 + 10, Math.min(canvas.width - s.basketW / 2 - 10, s.basketX));
+
+      // Spawn items
+      s.spawnTimer += dt;
+      const interval = Math.max(400, s.spawnInterval - s.level * 80);
+      if (s.spawnTimer > interval) {
+        s.spawnTimer = 0;
+        const needed = s.currentRecipe.ingredients;
+        const isRotten = Math.random() < 0.25;
+        let ingredient;
+        if (isRotten) {
+          ingredient = { name: 'rotten', emoji: '\u2620\uFE0F', isRotten: true };
+        } else {
+          // 60% chance to spawn something from the recipe
+          if (Math.random() < 0.6) {
+            const pick = needed[Math.floor(Math.random() * needed.length)];
+            ingredient = { name: pick, emoji: s.ingredientEmoji[pick] || '\u2753', isRotten: false };
+          } else {
+            const pick = s.allIngredients[Math.floor(Math.random() * s.allIngredients.length)];
+            ingredient = { name: pick, emoji: s.ingredientEmoji[pick] || '\u2753', isRotten: false };
+          }
+        }
+        s.items.push({
+          x: 40 + Math.random() * (canvas.width - 80),
+          y: -30,
+          ...ingredient,
+          speed: s.fallSpeed + Math.random() * 1.5 + s.level * 0.3
+        });
+      }
+
+      // Update items
+      for (const item of s.items) {
+        item.y += item.speed;
+      }
+
+      // Check catches
+      const bx1 = s.basketX - s.basketW / 2;
+      const bx2 = s.basketX + s.basketW / 2;
+      s.items = s.items.filter(item => {
+        if (item.y >= s.groundY - 20 && item.y <= s.groundY + 10 && item.x > bx1 && item.x < bx2) {
+          if (item.isRotten) {
+            s.lives--;
+            s.combo = 0;
+            s.floats.push({ x: item.x, y: s.groundY - 40, text: '-1 Life!', color: '#ef4444', life: 50, vy: -2 });
+            spawnBurstParticles(s.particles, item.x, s.groundY - 20, '#ef4444', 8);
+            if (s.lives <= 0) {
+              s.gameOver = true;
+              spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#ef4444', 30);
+            }
+            return false;
+          }
+          const needed = s.currentRecipe.ingredients;
+          if (needed.includes(item.name) && !s.collected.includes(item.name)) {
+            s.collected.push(item.name);
+            s.combo++;
+            if (s.combo > s.maxCombo) s.maxCombo = s.combo;
+            const pts = 100 * Math.min(5, s.combo);
+            s.score += pts;
+            s.floats.push({ x: item.x, y: s.groundY - 40, text: '+' + pts, color: '#4ade80', life: 45, vy: -2 });
+            spawnBurstParticles(s.particles, item.x, s.groundY - 20, '#4ade80', 6);
+            // Check recipe complete
+            if (s.collected.length >= needed.length) {
+              s.recipesCompleted++;
+              s.level++;
+              s.score += 500;
+              s.floats.push({ x: canvas.width / 2, y: canvas.height / 2, text: 'RECIPE DONE! +500', color: '#fbbf24', life: 70, vy: -1.5, font: 'bold 28px "Segoe UI", system-ui, sans-serif' });
+              spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#fbbf24', 20);
+              s.collected = [];
+              const nextRecipe = s.recipes[Math.floor(Math.random() * s.recipes.length)];
+              s.currentRecipe = nextRecipe;
+            }
+            return false;
+          } else if (!needed.includes(item.name)) {
+            s.combo = 0;
+            s.floats.push({ x: item.x, y: s.groundY - 40, text: 'Wrong!', color: '#fbbf24', life: 40, vy: -1.5 });
+            return false;
+          }
+          return false;
+        }
+        return item.y < canvas.height + 30;
+      });
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      // === DRAW ===
+      // Recipe display
+      const recipe = s.currentRecipe;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath(); ctx.roundRect(canvas.width / 2 - 220, 10, 440, 55, 10); ctx.fill();
+      drawTextCentered(recipe.emoji + ' ' + recipe.name + ': ' +
+        recipe.ingredients.map(ing => {
+          const done = s.collected.includes(ing);
+          return (done ? '\u2705' : '\u2B1C') + ' ' + (s.ingredientEmoji[ing] || '') + ing;
+        }).join('  '),
+        canvas.width / 2, 44, '15px "Segoe UI", system-ui, sans-serif', '#fff');
+
+      // Ground
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(0, s.groundY + 15, canvas.width, canvas.height - s.groundY);
+      ctx.strokeStyle = '#e85d04';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, s.groundY + 15); ctx.lineTo(canvas.width, s.groundY + 15); ctx.stroke();
+
+      // Items
+      for (const item of s.items) {
+        ctx.font = '28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.emoji, item.x, item.y);
+      }
+      ctx.textAlign = 'left';
+
+      // Basket
+      ctx.fillStyle = '#8B4513';
+      ctx.beginPath(); ctx.roundRect(s.basketX - s.basketW / 2, s.groundY - 15, s.basketW, 30, 6); ctx.fill();
+      ctx.strokeStyle = '#D2691E';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(s.basketX - s.basketW / 2, s.groundY - 15, s.basketW, 30, 6); ctx.stroke();
+      // Basket lines
+      ctx.strokeStyle = '#D2691E';
+      ctx.lineWidth = 1;
+      for (let lx = s.basketX - s.basketW / 2 + 12; lx < s.basketX + s.basketW / 2; lx += 12) {
+        ctx.beginPath(); ctx.moveTo(lx, s.groundY - 12); ctx.lineTo(lx, s.groundY + 12); ctx.stroke();
+      }
+
+      // Lives
+      for (let i = 0; i < s.lives; i++) {
+        ctx.font = '20px sans-serif';
+        ctx.fillText('\u2764\uFE0F', 15 + i * 28, canvas.height - 20);
+      }
+
+      drawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+      document.getElementById('pc-txns').textContent = s.combo + 'x';
+      document.getElementById('pc-rate').textContent = s.lives + '';
+
+      // Minimap
+      mmCtx.fillStyle = '#1a1510';
+      mmCtx.fillRect(0, 0, 180, 120);
+      mmCtx.fillStyle = '#e85d04';
+      mmCtx.font = 'bold 12px sans-serif';
+      mmCtx.textAlign = 'center';
+      mmCtx.fillText('Level ' + s.level, 90, 20);
+      mmCtx.fillStyle = '#fff';
+      mmCtx.font = '11px sans-serif';
+      mmCtx.fillText('Score: ' + s.score, 90, 42);
+      mmCtx.fillText('Combo: ' + s.combo + 'x', 90, 60);
+      mmCtx.fillText('Lives: ' + s.lives, 90, 78);
+      mmCtx.fillText('Recipes: ' + s.recipesCompleted, 90, 96);
+      mmCtx.textAlign = 'left';
+    },
+    onKey() {},
+    onSpace() {}
+  },
+
+  // ============================================================
+  // 3. chipFoundry - "EUV Pattern Lab" (Simon-Says Memory)
+  // ============================================================
+  chipFoundry: {
+    enter() {
+      const gridSize = 4;
+      const cells = [];
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          cells.push({ r, c, lit: 0, color: `hsl(${(r * gridSize + c) * 22}, 70%, 55%)` });
+        }
+      }
+      mgState = {
+        gridSize,
+        cells,
+        sequence: [],
+        playerSeq: [],
+        cursorR: 0,
+        cursorC: 0,
+        phase: 'showing', // 'showing', 'input', 'success', 'fail', 'ready'
+        showIndex: 0,
+        showTimer: 0,
+        flashDuration: 600,
+        round: 0,
+        score: 0,
+        floats: [],
+        particles: [],
+        gameOver: false,
+        readyTimer: 0,
+        successTimer: 0,
+        failTimer: 0
+      };
+      this._nextRound();
+    },
+    _nextRound() {
+      const s = mgState;
+      s.round++;
+      const rr = Math.floor(Math.random() * s.gridSize);
+      const rc = Math.floor(Math.random() * s.gridSize);
+      s.sequence.push(rr * s.gridSize + rc);
+      s.playerSeq = [];
+      s.showIndex = 0;
+      s.showTimer = performance.now() + 500;
+      s.phase = 'showing';
+      s.flashDuration = Math.max(250, 600 - s.round * 30);
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.chipFoundry;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      // Decay cell lit
+      for (const cell of s.cells) {
+        if (cell.lit > 0) cell.lit = Math.max(0, cell.lit - dt * 0.003);
+      }
+
+      if (s.gameOver) {
+        drawTextCentered('FOUNDRY SHUTDOWN', cx, cy - 60, 'bold 44px "Segoe UI", system-ui, sans-serif', '#ef4444');
+        drawTextCentered('Score: ' + s.score, cx, cy, 'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Reached Round ' + s.round, cx, cy + 40, '22px "Segoe UI", system-ui, sans-serif', '#60a5fa');
+        drawTextCentered('Press ESC to exit', cx, cy + 100, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        drawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+        document.getElementById('pc-txns').textContent = s.round + '';
+        document.getElementById('pc-rate').textContent = s.sequence.length + '';
+        mmCtx.fillStyle = '#0a1628'; mmCtx.fillRect(0, 0, 180, 120);
+        mmCtx.fillStyle = '#60a5fa'; mmCtx.font = 'bold 14px sans-serif'; mmCtx.textAlign = 'center';
+        mmCtx.fillText('Game Over', 90, 30);
+        mmCtx.fillStyle = '#fff'; mmCtx.font = '12px sans-serif';
+        mmCtx.fillText('Score: ' + s.score, 90, 55);
+        mmCtx.fillText('Round: ' + s.round, 90, 75);
+        mmCtx.textAlign = 'left';
+        return;
+      }
+
+      // Phase logic
+      if (s.phase === 'showing') {
+        if (time >= s.showTimer) {
+          if (s.showIndex < s.sequence.length) {
+            const cellIdx = s.sequence[s.showIndex];
+            s.cells[cellIdx].lit = 1;
+            s.showIndex++;
+            s.showTimer = time + s.flashDuration + 100;
+          } else {
+            s.phase = 'input';
+            s.cursorR = 0;
+            s.cursorC = 0;
+          }
+        }
+      } else if (s.phase === 'success') {
+        if (time - s.successTimer > 1000) {
+          miniGameHandlers.chipFoundry._nextRound();
+        }
+      } else if (s.phase === 'fail') {
+        if (time - s.failTimer > 1500) {
+          s.gameOver = true;
+          spawnBurstParticles(s.particles, cx, cy, '#ef4444', 30);
+        }
+      }
+
+      // Draw grid
+      const cellSize = Math.min(80, (canvas.width - 200) / s.gridSize);
+      const gridPx = cellSize * s.gridSize;
+      const gx = cx - gridPx / 2;
+      const gy = cy - gridPx / 2 + 30;
+
+      for (let i = 0; i < s.cells.length; i++) {
+        const cell = s.cells[i];
+        const x = gx + cell.c * cellSize;
+        const y = gy + cell.r * cellSize;
+        const pad = 4;
+
+        // Base cell
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.beginPath(); ctx.roundRect(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, 8); ctx.fill();
+
+        // Lit glow
+        if (cell.lit > 0) {
+          ctx.fillStyle = cell.color;
+          ctx.globalAlpha = cell.lit * 0.8;
+          ctx.beginPath(); ctx.roundRect(x + pad, y + pad, cellSize - pad * 2, cellSize - pad * 2, 8); ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+
+        // Cursor
+        if (s.phase === 'input' && cell.r === s.cursorR && cell.c === s.cursorC) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.roundRect(x + pad - 2, y + pad - 2, cellSize - pad * 2 + 4, cellSize - pad * 2 + 4, 10); ctx.stroke();
+        }
+
+        // Circuit pattern
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + cellSize / 2, y + pad + 5);
+        ctx.lineTo(x + cellSize / 2, y + cellSize - pad - 5);
+        ctx.moveTo(x + pad + 5, y + cellSize / 2);
+        ctx.lineTo(x + cellSize - pad - 5, y + cellSize / 2);
+        ctx.stroke();
+      }
+
+      // Phase text
+      if (s.phase === 'showing') {
+        drawTextCentered('MEMORIZE THE PATTERN...', cx, gy - 30, 'bold 22px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+      } else if (s.phase === 'input') {
+        drawTextCentered('YOUR TURN! (' + s.playerSeq.length + '/' + s.sequence.length + ')',
+          cx, gy - 30, 'bold 22px "Segoe UI", system-ui, sans-serif', '#4ade80');
+        drawTextCentered('Arrow keys to move, Space to select', cx, gy + gridPx + 40,
+          '14px "Segoe UI", system-ui, sans-serif', '#888');
+      } else if (s.phase === 'success') {
+        drawTextCentered('CORRECT! Round ' + s.round + ' complete!', cx, gy - 30,
+          'bold 22px "Segoe UI", system-ui, sans-serif', '#4ade80');
+      } else if (s.phase === 'fail') {
+        drawTextCentered('WRONG CELL!', cx, gy - 30, 'bold 26px "Segoe UI", system-ui, sans-serif', '#ef4444');
+      }
+
+      // Round info
+      drawTextCentered('Round ' + s.round + ' - Sequence Length: ' + s.sequence.length,
+        cx, 40, '18px "Segoe UI", system-ui, sans-serif', '#aaa');
+
+      drawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+      document.getElementById('pc-txns').textContent = s.round + '';
+      document.getElementById('pc-rate').textContent = s.sequence.length + '';
+
+      // Minimap
+      mmCtx.fillStyle = '#0a1628'; mmCtx.fillRect(0, 0, 180, 120);
+      const pctRound = Math.min(1, s.round / 20);
+      mmCtx.fillStyle = '#0066cc'; mmCtx.fillRect(10, 90, 160 * pctRound, 12);
+      mmCtx.strokeStyle = '#60a5fa'; mmCtx.strokeRect(10, 90, 160, 12);
+      mmCtx.fillStyle = '#fff'; mmCtx.font = '11px sans-serif'; mmCtx.textAlign = 'center';
+      mmCtx.fillText('Score: ' + s.score, 90, 25);
+      mmCtx.fillText('Round: ' + s.round, 90, 45);
+      mmCtx.fillText('Seq: ' + s.sequence.length, 90, 65);
+      mmCtx.textAlign = 'left';
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.phase !== 'input' || s.gameOver) return;
+      if (key === 'arrowup' || key === 'w') s.cursorR = Math.max(0, s.cursorR - 1);
+      if (key === 'arrowdown' || key === 's') s.cursorR = Math.min(s.gridSize - 1, s.cursorR + 1);
+      if (key === 'arrowleft' || key === 'a') s.cursorC = Math.max(0, s.cursorC - 1);
+      if (key === 'arrowright' || key === 'd') s.cursorC = Math.min(s.gridSize - 1, s.cursorC + 1);
+    },
+    onSpace() {
+      const s = mgState;
+      if (s.phase !== 'input' || s.gameOver) return;
+      const selected = s.cursorR * s.gridSize + s.cursorC;
+      const expected = s.sequence[s.playerSeq.length];
+      s.cells[selected].lit = 1;
+
+      if (selected === expected) {
+        s.playerSeq.push(selected);
+        const pts = 100 + s.round * 25;
+        s.score += pts;
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 40, text: '+' + pts, color: '#4ade80', life: 40, vy: -2 });
+        spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#4ade80', 5);
+
+        if (s.playerSeq.length === s.sequence.length) {
+          s.phase = 'success';
+          s.successTimer = performance.now();
+          s.score += s.round * 100;
+          s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: 'ROUND BONUS +' + (s.round * 100), color: '#fbbf24', life: 60, vy: -1.5, font: 'bold 24px "Segoe UI", system-ui, sans-serif' });
+          spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#fbbf24', 15);
+        }
+      } else {
+        s.phase = 'fail';
+        s.failTimer = performance.now();
+        // Light up the correct cell in red
+        s.cells[expected].lit = 1;
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 40, text: 'WRONG!', color: '#ef4444', life: 60, vy: -1.5 });
+      }
+    }
+  },
+
+  // ============================================================
+  // 4. transferHub - "Currency Rush" (Sorting/Routing)
+  // ============================================================
+  transferHub: {
+    enter() {
+      const currencies = ['USD', 'EUR', 'GBP', 'JPY'];
+      const amounts = [100, 250, 500, 750, 1000, 1500, 2000, 5000];
+      mgState = {
+        currencies,
+        amounts,
+        lanes: currencies.map((c, i) => ({ currency: c, y: 0, index: i })),
+        cursorLane: 0,
+        transfers: [],
+        spawnTimer: 0,
+        spawnInterval: 2200,
+        score: 0,
+        streak: 0,
+        maxStreak: 0,
+        totalRouted: 0,
+        lives: 5,
+        speed: 1,
+        floats: [],
+        particles: [],
+        gameOver: false,
+        currentTransfer: null,
+        transferTimer: 0,
+        transferTimeLimit: 6000
+      };
+      this._spawnTransfer();
+    },
+    _spawnTransfer() {
+      const s = mgState;
+      const dest = s.currencies[Math.floor(Math.random() * s.currencies.length)];
+      const amt = s.amounts[Math.floor(Math.random() * s.amounts.length)];
+      const from = s.currencies.filter(c => c !== dest)[Math.floor(Math.random() * 3)];
+      s.currentTransfer = {
+        amount: amt,
+        from: from,
+        to: dest,
+        label: '$' + amt + ' \u2192 ' + dest
+      };
+      s.transferTimer = performance.now();
+      s.transferTimeLimit = Math.max(2500, 6000 - s.totalRouted * 50);
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.transferHub;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      if (s.gameOver) {
+        drawTextCentered('TRANSFER HUB OFFLINE', cx, cy - 60, 'bold 44px "Segoe UI", system-ui, sans-serif', '#ef4444');
+        drawTextCentered('Score: ' + s.score, cx, cy, 'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Transfers Routed: ' + s.totalRouted, cx, cy + 40, '22px "Segoe UI", system-ui, sans-serif', '#9fe870');
+        drawTextCentered('Best Streak: ' + s.maxStreak + 'x', cx, cy + 75, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
+        drawTextCentered('Press ESC to exit', cx, cy + 130, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        drawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+        document.getElementById('pc-txns').textContent = s.maxStreak + 'x';
+        document.getElementById('pc-rate').textContent = s.totalRouted + '';
+        mmCtx.fillStyle = '#101a10'; mmCtx.fillRect(0, 0, 180, 120);
+        mmCtx.fillStyle = '#9fe870'; mmCtx.font = 'bold 14px sans-serif'; mmCtx.textAlign = 'center';
+        mmCtx.fillText('Game Over', 90, 30);
+        mmCtx.fillStyle = '#fff'; mmCtx.font = '12px sans-serif';
+        mmCtx.fillText('Score: ' + s.score, 90, 55);
+        mmCtx.fillText('Routed: ' + s.totalRouted, 90, 75);
+        mmCtx.textAlign = 'left';
+        return;
+      }
+
+      // Timer check
+      if (s.currentTransfer) {
+        const elapsed = time - s.transferTimer;
+        if (elapsed > s.transferTimeLimit) {
+          s.lives--;
+          s.streak = 0;
+          s.floats.push({ x: cx, y: cy - 50, text: 'TIMEOUT! -1 Life', color: '#ef4444', life: 50, vy: -2 });
+          if (s.lives <= 0) {
+            s.gameOver = true;
+            spawnBurstParticles(s.particles, cx, cy, '#ef4444', 30);
+            return;
+          }
+          this._spawnTransfer();
+        }
+      }
+
+      // Draw lanes on right
+      const laneH = 70;
+      const laneW = 200;
+      const lanesX = canvas.width - laneW - 40;
+      const lanesStartY = cy - (s.currencies.length * laneH) / 2;
+      const currencyColors = { USD: '#4ade80', EUR: '#60a5fa', GBP: '#c084fc', JPY: '#fbbf24' };
+      const currencySymbols = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5' };
+
+      for (let i = 0; i < s.currencies.length; i++) {
+        const ly = lanesStartY + i * laneH;
+        const curr = s.currencies[i];
+        const isSelected = i === s.cursorLane;
+
+        ctx.fillStyle = isSelected ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)';
+        ctx.beginPath(); ctx.roundRect(lanesX, ly + 4, laneW, laneH - 8, 8); ctx.fill();
+
+        if (isSelected) {
+          ctx.strokeStyle = currencyColors[curr];
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(lanesX, ly + 4, laneW, laneH - 8, 8); ctx.stroke();
+        }
+
+        // Currency label
+        ctx.fillStyle = currencyColors[curr];
+        ctx.font = 'bold 24px "Segoe UI", system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(currencySymbols[curr] + ' ' + curr, lanesX + laneW / 2, ly + laneH / 2 + 8);
+      }
+
+      // Router arrow
+      const arrowX = lanesX - 30;
+      const arrowY = lanesStartY + s.cursorLane * laneH + laneH / 2;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(arrowX, arrowY - 12);
+      ctx.lineTo(arrowX + 18, arrowY);
+      ctx.lineTo(arrowX, arrowY + 12);
+      ctx.closePath();
+      ctx.fill();
+
+      // Current transfer on left
+      if (s.currentTransfer) {
+        const tf = s.currentTransfer;
+        const tfX = 60;
+        const tfY = cy - 50;
+
+        // Transfer box
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.beginPath(); ctx.roundRect(tfX, tfY, 280, 100, 12); ctx.fill();
+        ctx.strokeStyle = currencyColors[tf.to] || '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(tfX, tfY, 280, 100, 12); ctx.stroke();
+
+        drawTextCentered('INCOMING TRANSFER', tfX + 140, tfY + 25, 'bold 14px "Segoe UI", system-ui, sans-serif', '#aaa');
+        drawTextCentered(tf.label, tfX + 140, tfY + 58, 'bold 24px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('from ' + tf.from, tfX + 140, tfY + 82, '14px "Segoe UI", system-ui, sans-serif', '#aaa');
+
+        // Connection line
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(tfX + 280, cy);
+        ctx.lineTo(arrowX - 5, arrowY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Timer bar
+        const elapsed = time - s.transferTimer;
+        drawTimerBar(s.transferTimeLimit - elapsed, s.transferTimeLimit, '#9fe870', tfY + 105);
+      }
+
+      // Lives
+      for (let i = 0; i < s.lives; i++) {
+        ctx.font = '18px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('\u2764\uFE0F', 15 + i * 26, 30);
+      }
+
+      // Streak display
+      if (s.streak > 1) {
+        drawTextCentered(s.streak + 'x STREAK!', cx, 70, 'bold 20px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+      }
+
+      drawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      ctx.textAlign = 'left';
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+      document.getElementById('pc-txns').textContent = s.streak + 'x';
+      document.getElementById('pc-rate').textContent = s.totalRouted + '';
+
+      // Minimap
+      mmCtx.fillStyle = '#101a10'; mmCtx.fillRect(0, 0, 180, 120);
+      mmCtx.fillStyle = '#9fe870'; mmCtx.font = 'bold 12px sans-serif'; mmCtx.textAlign = 'center';
+      mmCtx.fillText('Currency Rush', 90, 20);
+      mmCtx.fillStyle = '#fff'; mmCtx.font = '11px sans-serif';
+      mmCtx.fillText('Score: ' + s.score, 90, 42);
+      mmCtx.fillText('Streak: ' + s.streak + 'x', 90, 60);
+      mmCtx.fillText('Lives: ' + s.lives, 90, 78);
+      mmCtx.fillText('Routed: ' + s.totalRouted, 90, 96);
+      mmCtx.textAlign = 'left';
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (key === 'w' || key === 'arrowup') s.cursorLane = Math.max(0, s.cursorLane - 1);
+      if (key === 's' || key === 'arrowdown') s.cursorLane = Math.min(s.currencies.length - 1, s.cursorLane + 1);
+    },
+    onSpace() {
+      const s = mgState;
+      if (s.gameOver || !s.currentTransfer) return;
+      const target = s.currentTransfer.to;
+      const selected = s.currencies[s.cursorLane];
+
+      if (selected === target) {
+        s.streak++;
+        if (s.streak > s.maxStreak) s.maxStreak = s.streak;
+        s.totalRouted++;
+        const mult = Math.min(5, 1 + Math.floor(s.streak / 3));
+        const pts = (100 + Math.floor(s.currentTransfer.amount / 10)) * mult;
+        s.score += pts;
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 60, text: '+' + pts, color: '#4ade80', life: 45, vy: -2 });
+        spawnBurstParticles(s.particles, canvas.width - 140, canvas.height / 2 - (s.currencies.length * 70) / 2 + s.cursorLane * 70 + 35, '#4ade80', 10);
+        miniGameHandlers.transferHub._spawnTransfer();
+      } else {
+        s.streak = 0;
+        s.lives--;
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 60, text: 'WRONG LANE!', color: '#ef4444', life: 50, vy: -2 });
+        spawnBurstParticles(s.particles, canvas.width - 140, canvas.height / 2, '#ef4444', 8);
+        if (s.lives <= 0) {
+          s.gameOver = true;
+          spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#ef4444', 30);
+        } else {
+          miniGameHandlers.transferHub._spawnTransfer();
+        }
+      }
+    }
+  },
+
+  // ============================================================
+  // 5. insuranceEmpire - "Buffett's Trading Floor" (Stock Trading)
+  // ============================================================
+  insuranceEmpire: {
+    enter() {
+      const quotes = [
+        '"Be fearful when others are greedy."',
+        '"Price is what you pay. Value is what you get."',
+        '"The stock market is a device for transferring money from the impatient to the patient."',
+        '"Risk comes from not knowing what you are doing."',
+        '"Only buy something that you would be perfectly happy to hold if the market shut down for 10 years."',
+        '"Our favorite holding period is forever."',
+        '"Rule No.1: Never lose money. Rule No.2: Never forget rule No.1."',
+        '"It is better to be approximately right than precisely wrong."'
+      ];
+      mgState = {
+        cash: 10000,
+        shares: 0,
+        priceHistory: [],
+        price: 100,
+        t: 0,
+        noise: 0,
+        holding: false,
+        buyPrice: 0,
+        gameTime: 90,
+        startTime: performance.now(),
+        trades: [],
+        floats: [],
+        particles: [],
+        gameOver: false,
+        eventText: '',
+        eventTimer: 0,
+        quotes,
+        nextQuoteTime: performance.now() + 5000,
+        currentQuote: quotes[0],
+        eventActive: false,
+        eventMultiplier: 1,
+        lastEventTime: 0,
+        peakPortfolio: 10000
+      };
+      // Pre-fill some price history
+      let p = 100, n = 0;
+      for (let i = 0; i < 200; i++) {
+        n += (Math.random() - 0.5) * 2;
+        n *= 0.98;
+        p = 100 + Math.sin(i * 0.02) * 20 + Math.sin(i * 0.05) * 10 + n;
+        p = Math.max(30, Math.min(250, p));
+        mgState.priceHistory.push(p);
+      }
+      mgState.noise = n;
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.insuranceEmpire;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      const elapsed = (time - s.startTime) / 1000;
+      const timeLeft = Math.max(0, s.gameTime - elapsed);
+      const portfolio = s.cash + s.shares * s.price;
+      if (portfolio > s.peakPortfolio) s.peakPortfolio = portfolio;
+
+      if (timeLeft <= 0 && !s.gameOver) {
+        s.gameOver = true;
+        // Auto-sell
+        if (s.shares > 0) {
+          s.cash += s.shares * s.price;
+          s.shares = 0;
+        }
+        spawnBurstParticles(s.particles, cx, cy, '#fbbf24', 40);
+      }
+
+      if (s.gameOver) {
+        drawTextCentered('MARKET CLOSED', cx, cy - 80, 'bold 44px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+        drawTextCentered('Final Portfolio: $' + Math.floor(s.cash).toLocaleString(), cx, cy - 20,
+          'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
+        const profit = s.cash - 10000;
+        const profitColor = profit >= 0 ? '#4ade80' : '#ef4444';
+        drawTextCentered((profit >= 0 ? 'Profit' : 'Loss') + ': $' + Math.floor(Math.abs(profit)).toLocaleString(),
+          cx, cy + 25, 'bold 24px "Segoe UI", system-ui, sans-serif', profitColor);
+        drawTextCentered('Trades: ' + s.trades.length, cx, cy + 65, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
+        drawTextCentered('Press ESC to exit', cx, cy + 120, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        drawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = '$' + Math.floor(s.cash).toLocaleString();
+        document.getElementById('pc-txns').textContent = '0';
+        document.getElementById('pc-rate').textContent = '0:00';
+        mmCtx.fillStyle = '#0a0f1e'; mmCtx.fillRect(0, 0, 180, 120);
+        mmCtx.fillStyle = '#fbbf24'; mmCtx.font = 'bold 14px sans-serif'; mmCtx.textAlign = 'center';
+        mmCtx.fillText('Market Closed', 90, 30);
+        mmCtx.fillStyle = profitColor; mmCtx.font = '12px sans-serif';
+        mmCtx.fillText((profit >= 0 ? '+$' : '-$') + Math.floor(Math.abs(profit)).toLocaleString(), 90, 55);
+        mmCtx.fillStyle = '#fff';
+        mmCtx.fillText('Trades: ' + s.trades.length, 90, 75);
+        mmCtx.textAlign = 'left';
+        return;
+      }
+
+      // Update price
+      s.t += dt * 0.06;
+      s.noise += (Math.random() - 0.5) * 1.5 * s.eventMultiplier;
+      s.noise *= 0.985;
+      s.price = 100 + Math.sin(s.t * 0.02) * 20 + Math.sin(s.t * 0.05) * 10 + s.noise;
+      s.price = Math.max(30, Math.min(250, s.price));
+      s.priceHistory.push(s.price);
+      if (s.priceHistory.length > 400) s.priceHistory.shift();
+
+      // Random events
+      if (time - s.lastEventTime > 12000 + Math.random() * 8000) {
+        s.lastEventTime = time;
+        const events = [
+          { text: 'MARKET CRASH!', mult: 2.5, dir: -1 },
+          { text: 'BULL RUN!', mult: 2, dir: 1 },
+          { text: 'FED RATE CUT!', mult: 1.8, dir: 1 },
+          { text: 'EARNINGS MISS!', mult: 2, dir: -1 },
+          { text: 'DIVIDEND ANNOUNCED!', mult: 1.5, dir: 1 },
+          { text: 'SHORT SQUEEZE!', mult: 3, dir: 1 }
+        ];
+        const evt = events[Math.floor(Math.random() * events.length)];
+        s.eventText = evt.text;
+        s.eventTimer = time + 3000;
+        s.eventMultiplier = evt.mult;
+        s.noise += evt.dir * (10 + Math.random() * 15);
+        setTimeout(() => { s.eventMultiplier = 1; }, 5000);
+      }
+
+      // Buffett quotes
+      if (time > s.nextQuoteTime) {
+        s.currentQuote = s.quotes[Math.floor(Math.random() * s.quotes.length)];
+        s.nextQuoteTime = time + 8000 + Math.random() * 7000;
+      }
+
+      // === DRAW ===
+      // Terminal scanlines
+      for (let y = 0; y < canvas.height; y += 3) {
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(0, y, canvas.width, 1);
+      }
+
+      // Timer
+      const mins = Math.floor(timeLeft / 60);
+      const secs = Math.floor(timeLeft % 60);
+      drawTimerBar(timeLeft, s.gameTime, '#60a5fa', 15);
+      drawTextCentered(mins + ':' + String(secs).padStart(2, '0'), cx, 12, 'bold 12px monospace', '#aaa');
+
+      // Price chart
+      const chartX = 40;
+      const chartY = 60;
+      const chartW = canvas.width - 80;
+      const chartH = canvas.height * 0.45;
+
+      // Chart background
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath(); ctx.roundRect(chartX - 10, chartY - 10, chartW + 20, chartH + 20, 8); ctx.fill();
+
+      // Grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      for (let gy = 0; gy < 5; gy++) {
+        const yy = chartY + (chartH / 4) * gy;
+        ctx.beginPath(); ctx.moveTo(chartX, yy); ctx.lineTo(chartX + chartW, yy); ctx.stroke();
+      }
+
+      // Price line
+      const visiblePts = Math.min(s.priceHistory.length, Math.floor(chartW / 2));
+      const startIdx = s.priceHistory.length - visiblePts;
+      const prices = s.priceHistory.slice(startIdx);
+      const minP = Math.min(...prices) - 10;
+      const maxP = Math.max(...prices) + 10;
+
+      ctx.strokeStyle = s.price > (s.priceHistory[s.priceHistory.length - 2] || s.price) ? '#4ade80' : '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < prices.length; i++) {
+        const px = chartX + (i / (visiblePts - 1)) * chartW;
+        const py = chartY + chartH - ((prices[i] - minP) / (maxP - minP)) * chartH;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Price fill gradient
+      const lastPx = chartX + chartW;
+      const lastPy = chartY + chartH - ((s.price - minP) / (maxP - minP)) * chartH;
+      ctx.lineTo(lastPx, chartY + chartH);
+      ctx.lineTo(chartX, chartY + chartH);
+      ctx.closePath();
+      const fillGrad = ctx.createLinearGradient(0, chartY, 0, chartY + chartH);
+      const lineColor = s.price > (s.priceHistory[s.priceHistory.length - 2] || s.price) ? '#4ade80' : '#ef4444';
+      fillGrad.addColorStop(0, lineColor + '25');
+      fillGrad.addColorStop(1, lineColor + '02');
+      ctx.fillStyle = fillGrad;
+      ctx.fill();
+
+      // Current price dot
+      ctx.fillStyle = lineColor;
+      ctx.beginPath(); ctx.arc(lastPx, lastPy, 5, 0, Math.PI * 2); ctx.fill();
+
+      // Price labels
+      ctx.fillStyle = '#aaa';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('$' + maxP.toFixed(0), chartX - 4, chartY + 10);
+      ctx.fillText('$' + minP.toFixed(0), chartX - 4, chartY + chartH);
+
+      // Current price
+      ctx.textAlign = 'left';
+      ctx.fillStyle = lineColor;
+      ctx.font = 'bold 20px monospace';
+      ctx.fillText('$' + s.price.toFixed(2), lastPx + 10, lastPy + 6);
+
+      // Buy/Sell indicator on chart
+      if (s.holding) {
+        const buyPy = chartY + chartH - ((s.buyPrice - minP) / (maxP - minP)) * chartH;
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(chartX, buyPy); ctx.lineTo(chartX + chartW, buyPy); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('Buy @ $' + s.buyPrice.toFixed(2), chartX + chartW - 5, buyPy - 5);
+      }
+
+      // Bottom panel
+      const panelY = chartY + chartH + 35;
+
+      // Portfolio info
+      const pnl = s.holding ? (s.price - s.buyPrice) * s.shares : 0;
+      const pnlColor = pnl >= 0 ? '#4ade80' : '#ef4444';
+
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath(); ctx.roundRect(40, panelY, canvas.width - 80, 80, 8); ctx.fill();
+
+      ctx.textAlign = 'left';
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#888';
+      ctx.fillText('CASH', 60, panelY + 25);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText('$' + Math.floor(s.cash).toLocaleString(), 60, panelY + 50);
+
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#888';
+      ctx.fillText('SHARES', 240, panelY + 25);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText(s.shares + '', 240, panelY + 50);
+
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#888';
+      ctx.fillText('P&L', 400, panelY + 25);
+      ctx.fillStyle = pnlColor;
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText((pnl >= 0 ? '+' : '') + '$' + Math.floor(pnl).toLocaleString(), 400, panelY + 50);
+
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#888';
+      ctx.fillText('PORTFOLIO', 580, panelY + 25);
+      ctx.fillStyle = portfolio >= 10000 ? '#4ade80' : '#ef4444';
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText('$' + Math.floor(portfolio).toLocaleString(), 580, panelY + 50);
+
+      // Action prompt
+      const actionY = panelY + 100;
+      if (s.holding) {
+        drawTextCentered('Press SPACE to SELL ' + s.shares + ' shares @ $' + s.price.toFixed(2),
+          cx, actionY, 'bold 16px "Segoe UI", system-ui, sans-serif', '#ef4444');
+      } else {
+        const canBuy = Math.floor(s.cash / s.price);
+        drawTextCentered('Press SPACE to BUY ' + canBuy + ' shares @ $' + s.price.toFixed(2),
+          cx, actionY, 'bold 16px "Segoe UI", system-ui, sans-serif', '#4ade80');
+      }
+
+      // Event text
+      if (s.eventText && time < s.eventTimer) {
+        const evtAlpha = (s.eventTimer - time) / 3000;
+        ctx.globalAlpha = evtAlpha;
+        drawTextCentered(s.eventText, cx, panelY - 15, 'bold 28px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+        ctx.globalAlpha = 1;
+      }
+
+      // Buffett quote
+      ctx.fillStyle = '#555';
+      ctx.font = 'italic 13px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(s.currentQuote, cx, canvas.height - 20);
+      ctx.textAlign = 'left';
+
+      drawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = '$' + Math.floor(portfolio).toLocaleString();
+      document.getElementById('pc-txns').textContent = s.shares + '';
+      document.getElementById('pc-rate').textContent = mins + ':' + String(secs).padStart(2, '0');
+
+      // Minimap
+      mmCtx.fillStyle = '#0a0f1e'; mmCtx.fillRect(0, 0, 180, 120);
+      // Mini price chart
+      mmCtx.strokeStyle = lineColor;
+      mmCtx.lineWidth = 1;
+      mmCtx.beginPath();
+      const mmPts = Math.min(prices.length, 180);
+      const mmStart = prices.length - mmPts;
+      const mmMinP = Math.min(...prices.slice(mmStart));
+      const mmMaxP = Math.max(...prices.slice(mmStart));
+      for (let i = 0; i < mmPts; i++) {
+        const px = (i / mmPts) * 180;
+        const py = 100 - ((prices[mmStart + i] - mmMinP) / (mmMaxP - mmMinP + 1)) * 80;
+        if (i === 0) mmCtx.moveTo(px, py); else mmCtx.lineTo(px, py);
+      }
+      mmCtx.stroke();
+      mmCtx.fillStyle = '#fff'; mmCtx.font = '10px monospace'; mmCtx.textAlign = 'center';
+      mmCtx.fillText('$' + s.price.toFixed(0) + ' | $' + Math.floor(portfolio).toLocaleString(), 90, 115);
+      mmCtx.textAlign = 'left';
+    },
+    onKey() {},
+    onSpace() {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (!s.holding) {
+        const qty = Math.floor(s.cash / s.price);
+        if (qty <= 0) return;
+        s.shares = qty;
+        s.cash -= qty * s.price;
+        s.buyPrice = s.price;
+        s.holding = true;
+        s.trades.push({ type: 'buy', price: s.price, qty, time: performance.now() });
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2, text: 'BOUGHT ' + qty + ' @ $' + s.price.toFixed(2), color: '#4ade80', life: 50, vy: -2 });
+        spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#4ade80', 10);
+      } else {
+        const revenue = s.shares * s.price;
+        const profit = revenue - s.shares * s.buyPrice;
+        s.cash += revenue;
+        s.trades.push({ type: 'sell', price: s.price, qty: s.shares, profit, time: performance.now() });
+        const profitColor = profit >= 0 ? '#4ade80' : '#ef4444';
+        s.floats.push({ x: canvas.width / 2, y: canvas.height / 2, text: (profit >= 0 ? '+' : '') + '$' + Math.floor(profit).toLocaleString(), color: profitColor, life: 60, vy: -2, font: 'bold 28px "Segoe UI", system-ui, sans-serif' });
+        spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, profitColor, 15);
+        s.shares = 0;
+        s.holding = false;
+      }
+    }
+  },
+
+  // ============================================================
+  // 6. marketplaceTown - "Delivery Dash" (Endless Runner)
+  // ============================================================
+  marketplaceTown: {
+    enter() {
+      const groundY = canvas.height * 0.75;
+      mgState = {
+        groundY,
+        playerX: canvas.width * 0.2,
+        playerY: groundY,
+        playerH: 50,
+        playerW: 30,
+        velY: 0,
+        isJumping: false,
+        isDucking: false,
+        obstacles: [],
+        collectibles: [],
+        spawnTimer: 0,
+        collectSpawnTimer: 0,
+        score: 0,
+        distance: 0,
+        speed: 4,
+        maxSpeed: 14,
+        lives: 3,
+        floats: [],
+        particles: [],
+        gameOver: false,
+        groundOffset: 0,
+        bgOffset1: 0,
+        bgOffset2: 0,
+        invincibleTimer: 0
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.marketplaceTown;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      const cx = canvas.width / 2;
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      if (s.gameOver) {
+        drawTextCentered('DELIVERY OVER!', cx, canvas.height / 2 - 60, 'bold 44px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+        drawTextCentered('Score: ' + s.score, cx, canvas.height / 2, 'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Distance: ' + Math.floor(s.distance) + 'm', cx, canvas.height / 2 + 40, '22px "Segoe UI", system-ui, sans-serif', '#ffe600');
+        drawTextCentered('Top Speed: ' + s.speed.toFixed(1), cx, canvas.height / 2 + 75, '18px "Segoe UI", system-ui, sans-serif', '#aaa');
+        drawTextCentered('Press ESC to exit', cx, canvas.height / 2 + 130, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        drawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+        document.getElementById('pc-txns').textContent = s.speed.toFixed(1);
+        document.getElementById('pc-rate').textContent = '0';
+        mmCtx.fillStyle = '#1a1800'; mmCtx.fillRect(0, 0, 180, 120);
+        mmCtx.fillStyle = '#ffe600'; mmCtx.font = 'bold 14px sans-serif'; mmCtx.textAlign = 'center';
+        mmCtx.fillText('Game Over', 90, 30);
+        mmCtx.fillStyle = '#fff'; mmCtx.font = '12px sans-serif';
+        mmCtx.fillText('Score: ' + s.score, 90, 55);
+        mmCtx.fillText('Distance: ' + Math.floor(s.distance) + 'm', 90, 75);
+        mmCtx.textAlign = 'left';
+        return;
+      }
+
+      // Input handling (continuous)
+      if ((keys['s'] || keys['arrowdown']) && !s.isJumping) {
+        s.isDucking = true;
+      } else {
+        s.isDucking = false;
+      }
+
+      // Physics
+      if (s.isJumping) {
+        s.velY += 0.6;
+        s.playerY += s.velY;
+        if (s.playerY >= s.groundY) {
+          s.playerY = s.groundY;
+          s.isJumping = false;
+          s.velY = 0;
+        }
+      }
+
+      // Speed increase
+      s.speed = Math.min(s.maxSpeed, 4 + s.distance * 0.003);
+      s.distance += s.speed * dt * 0.01;
+
+      // Scroll offsets
+      s.groundOffset = (s.groundOffset + s.speed) % 40;
+      s.bgOffset1 = (s.bgOffset1 + s.speed * 0.2) % canvas.width;
+      s.bgOffset2 = (s.bgOffset2 + s.speed * 0.5) % canvas.width;
+
+      // Spawn obstacles
+      s.spawnTimer += dt;
+      const spawnInterval = Math.max(600, 2000 - s.speed * 80);
+      if (s.spawnTimer > spawnInterval) {
+        s.spawnTimer = 0;
+        const type = Math.random();
+        if (type < 0.4) {
+          // Ground obstacle (crate) - jump over
+          s.obstacles.push({ x: canvas.width + 50, y: s.groundY, w: 35, h: 35, type: 'crate', emoji: '\uD83D\uDCE6' });
+        } else if (type < 0.7) {
+          // Tall ground obstacle (pothole/barrel)
+          s.obstacles.push({ x: canvas.width + 50, y: s.groundY, w: 30, h: 25, type: 'pothole', emoji: '\u26A0\uFE0F' });
+        } else {
+          // High obstacle - duck under
+          s.obstacles.push({ x: canvas.width + 50, y: s.groundY - 55, w: 60, h: 20, type: 'barrier', emoji: '\uD83D\uDEA7' });
+        }
+      }
+
+      // Spawn collectibles
+      s.collectSpawnTimer += dt;
+      if (s.collectSpawnTimer > 1200) {
+        s.collectSpawnTimer = 0;
+        const ctype = Math.random() < 0.4 ? 'package' : 'coin';
+        const cy2 = s.groundY - 30 - Math.random() * 60;
+        s.collectibles.push({
+          x: canvas.width + 50, y: cy2,
+          type: ctype,
+          emoji: ctype === 'package' ? '\uD83D\uDCE6' : '\uD83E\uDE99',
+          points: ctype === 'package' ? 100 : 50,
+          w: 24, h: 24
+        });
+      }
+
+      // Invincibility timer
+      if (s.invincibleTimer > 0) s.invincibleTimer -= dt;
+
+      // Update obstacles
+      s.obstacles = s.obstacles.filter(obs => {
+        obs.x -= s.speed;
+        // Collision
+        if (s.invincibleTimer <= 0) {
+          const pH = s.isDucking ? s.playerH * 0.5 : s.playerH;
+          const pTop = s.playerY - pH;
+          const pLeft = s.playerX - s.playerW / 2;
+          const pRight = s.playerX + s.playerW / 2;
+          const oLeft = obs.x - obs.w / 2;
+          const oRight = obs.x + obs.w / 2;
+          const oTop = obs.y - obs.h;
+          const oBottom = obs.y;
+
+          if (pRight > oLeft && pLeft < oRight && s.playerY > oTop && pTop < oBottom) {
+            s.lives--;
+            s.invincibleTimer = 1500;
+            s.floats.push({ x: s.playerX, y: s.playerY - 60, text: '-1 Life!', color: '#ef4444', life: 50, vy: -2 });
+            spawnBurstParticles(s.particles, s.playerX, s.playerY - 25, '#ef4444', 8);
+            if (s.lives <= 0) {
+              s.gameOver = true;
+              spawnBurstParticles(s.particles, s.playerX, s.playerY, '#ef4444', 30);
+            }
+            return false;
+          }
+        }
+        return obs.x > -60;
+      });
+
+      // Update collectibles
+      s.collectibles = s.collectibles.filter(col => {
+        col.x -= s.speed;
+        const dx = Math.abs(col.x - s.playerX);
+        const dy = Math.abs(col.y - (s.playerY - (s.isDucking ? s.playerH * 0.25 : s.playerH * 0.5)));
+        if (dx < 30 && dy < 35) {
+          s.score += col.points;
+          s.floats.push({ x: col.x, y: col.y - 20, text: '+' + col.points, color: col.type === 'package' ? '#4ade80' : '#fbbf24', life: 40, vy: -2 });
+          spawnBurstParticles(s.particles, col.x, col.y, col.type === 'package' ? '#4ade80' : '#fbbf24', 5);
+          return false;
+        }
+        return col.x > -30;
+      });
+
+      // Score from distance
+      s.score += Math.floor(s.speed * 0.1);
+
+      // === DRAW ===
+      // Background buildings (parallax)
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      for (let i = 0; i < 8; i++) {
+        const bx = ((i * 180 - s.bgOffset1) % (canvas.width + 180) + canvas.width + 180) % (canvas.width + 180) - 90;
+        const bh = 80 + (i * 37) % 120;
+        ctx.fillRect(bx, s.groundY - bh, 70, bh);
+      }
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let i = 0; i < 12; i++) {
+        const bx = ((i * 130 - s.bgOffset2) % (canvas.width + 130) + canvas.width + 130) % (canvas.width + 130) - 65;
+        const bh = 40 + (i * 23) % 80;
+        ctx.fillRect(bx, s.groundY - bh, 50, bh);
+      }
+
+      // Ground
+      ctx.fillStyle = '#654321';
+      ctx.fillRect(0, s.groundY, canvas.width, canvas.height - s.groundY);
+      ctx.strokeStyle = '#ffe600';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0, s.groundY); ctx.lineTo(canvas.width, s.groundY); ctx.stroke();
+
+      // Ground markers
+      ctx.fillStyle = 'rgba(255,230,0,0.3)';
+      for (let gx = -s.groundOffset; gx < canvas.width; gx += 40) {
+        ctx.fillRect(gx, s.groundY + 8, 20, 4);
+      }
+
+      // Obstacles
+      for (const obs of s.obstacles) {
+        if (obs.type === 'barrier') {
+          ctx.fillStyle = '#ff6b6b';
+          ctx.fillRect(obs.x - obs.w / 2, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath(); ctx.moveTo(obs.x - obs.w / 2, obs.y + obs.h / 2); ctx.lineTo(obs.x + obs.w / 2, obs.y + obs.h / 2); ctx.stroke();
+          ctx.setLineDash([]);
+          // Poles
+          ctx.fillStyle = '#ff6b6b';
+          ctx.fillRect(obs.x - obs.w / 2, obs.y, 4, s.groundY - obs.y);
+          ctx.fillRect(obs.x + obs.w / 2 - 4, obs.y, 4, s.groundY - obs.y);
+        } else {
+          ctx.font = '28px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(obs.emoji, obs.x, obs.y - 5);
+        }
+      }
+
+      // Collectibles
+      for (const col of s.collectibles) {
+        ctx.font = '22px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(col.emoji, col.x, col.y + 8);
+      }
+
+      // Player
+      const pAlpha = s.invincibleTimer > 0 ? (Math.sin(time * 0.02) * 0.3 + 0.7) : 1;
+      ctx.globalAlpha = pAlpha;
+      const pH = s.isDucking ? s.playerH * 0.5 : s.playerH;
+      const pY = s.playerY - pH;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath(); ctx.ellipse(s.playerX, s.groundY + 3, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+      // Body
+      ctx.fillStyle = '#ffe600';
+      ctx.beginPath(); ctx.roundRect(s.playerX - s.playerW / 2, pY, s.playerW, pH, 4); ctx.fill();
+
+      // Head
+      ctx.fillStyle = '#fcd5b0';
+      ctx.beginPath(); ctx.arc(s.playerX, pY - 8, 10, 0, Math.PI * 2); ctx.fill();
+
+      // Cap
+      ctx.fillStyle = '#ffe600';
+      ctx.beginPath(); ctx.arc(s.playerX, pY - 12, 8, Math.PI, 0); ctx.fill();
+      ctx.fillRect(s.playerX - 10, pY - 12, 20, 4);
+
+      // Eyes
+      ctx.fillStyle = '#333';
+      ctx.beginPath(); ctx.arc(s.playerX + 3, pY - 9, 2, 0, Math.PI * 2); ctx.fill();
+
+      // Running legs
+      if (!s.isJumping && !s.isDucking) {
+        const legAnim = Math.sin(time * 0.015) * 6;
+        ctx.fillStyle = '#333';
+        ctx.fillRect(s.playerX - 8, s.playerY - 10 + legAnim, 6, 10);
+        ctx.fillRect(s.playerX + 2, s.playerY - 10 - legAnim, 6, 10);
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.textAlign = 'left';
+
+      // Lives
+      for (let i = 0; i < s.lives; i++) {
+        ctx.font = '20px sans-serif';
+        ctx.fillText('\u2764\uFE0F', 15 + i * 28, 30);
+      }
+
+      // Speed indicator
+      drawTextCentered('Speed: ' + s.speed.toFixed(1) + 'x', cx, 30, '16px "Segoe UI", system-ui, sans-serif', '#ffe600');
+
+      // Distance
+      drawTextCentered(Math.floor(s.distance) + 'm', cx, canvas.height - 25, '14px "Segoe UI", system-ui, sans-serif', '#aaa');
+
+      drawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+      document.getElementById('pc-txns').textContent = s.speed.toFixed(1) + 'x';
+      document.getElementById('pc-rate').textContent = s.lives + '';
+
+      // Minimap
+      mmCtx.fillStyle = '#1a1800'; mmCtx.fillRect(0, 0, 180, 120);
+      mmCtx.fillStyle = '#ffe600'; mmCtx.font = 'bold 12px sans-serif'; mmCtx.textAlign = 'center';
+      mmCtx.fillText('Delivery Dash', 90, 20);
+      mmCtx.fillStyle = '#fff'; mmCtx.font = '11px sans-serif';
+      mmCtx.fillText('Score: ' + s.score, 90, 42);
+      mmCtx.fillText('Speed: ' + s.speed.toFixed(1) + 'x', 90, 60);
+      mmCtx.fillText('Lives: ' + s.lives, 90, 78);
+      mmCtx.fillText(Math.floor(s.distance) + 'm', 90, 96);
+      mmCtx.textAlign = 'left';
+    },
+    onKey() {},
+    onSpace() {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (!s.isJumping) {
+        s.isJumping = true;
+        s.velY = -12;
+        s.isDucking = false;
+      }
+    }
+  },
+
+  // ============================================================
+  // 7. dataCenter - "GPU Command Center" (Whack-a-Mole Grid)
+  // ============================================================
+  dataCenter: {
+    enter() {
+      const rows = 4;
+      const cols = 5;
+      const grid = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          grid.push({ r, c, task: null });
+        }
+      }
+      const taskTypes = [
+        { name: 'Training', points: 500, timer: 4000, color: '#22d3ee', emoji: '\uD83E\uDDE0' },
+        { name: 'Inference', points: 200, timer: 3000, color: '#60a5fa', emoji: '\u26A1' },
+        { name: 'DataLoad', points: 100, timer: 5000, color: '#4ade80', emoji: '\uD83D\uDCBE' },
+        { name: 'Backup', points: 300, timer: 6000, color: '#c084fc', emoji: '\uD83D\uDCC0' },
+        { name: 'Alert', points: 400, timer: 2000, color: '#f87171', emoji: '\uD83D\uDEA8' }
+      ];
+      mgState = {
+        rows, cols, grid, taskTypes,
+        cursorR: 0, cursorC: 0,
+        score: 0,
+        uptime: 100,
+        tasksProcessed: 0,
+        tasksExpired: 0,
+        spawnTimer: 0,
+        spawnInterval: 2000,
+        floats: [],
+        particles: [],
+        gameOver: false,
+        difficulty: 1
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.dataCenter;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      if (s.gameOver) {
+        drawTextCentered('SYSTEM FAILURE', cx, cy - 60, 'bold 44px "Segoe UI", system-ui, sans-serif', '#ef4444');
+        drawTextCentered('Score: ' + s.score, cx, cy, 'bold 32px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Tasks Processed: ' + s.tasksProcessed, cx, cy + 40, '22px "Segoe UI", system-ui, sans-serif', '#22d3ee');
+        drawTextCentered('Press ESC to exit', cx, cy + 100, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        drawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+        document.getElementById('pc-txns').textContent = '0%';
+        document.getElementById('pc-rate').textContent = s.tasksProcessed + '';
+        mmCtx.fillStyle = '#0a1520'; mmCtx.fillRect(0, 0, 180, 120);
+        mmCtx.fillStyle = '#ef4444'; mmCtx.font = 'bold 14px sans-serif'; mmCtx.textAlign = 'center';
+        mmCtx.fillText('System Down', 90, 30);
+        mmCtx.fillStyle = '#fff'; mmCtx.font = '12px sans-serif';
+        mmCtx.fillText('Score: ' + s.score, 90, 55);
+        mmCtx.fillText('Tasks: ' + s.tasksProcessed, 90, 75);
+        mmCtx.textAlign = 'left';
+        return;
+      }
+
+      // Difficulty scaling
+      s.difficulty = 1 + Math.floor(s.tasksProcessed / 8) * 0.3;
+
+      // Spawn tasks
+      s.spawnTimer += dt;
+      const interval = Math.max(600, s.spawnInterval / s.difficulty);
+      if (s.spawnTimer > interval) {
+        s.spawnTimer = 0;
+        const emptyCells = s.grid.filter(c => !c.task);
+        if (emptyCells.length > 0) {
+          const cell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+          const tt = s.taskTypes[Math.floor(Math.random() * s.taskTypes.length)];
+          const timerDuration = tt.timer / Math.min(2, s.difficulty);
+          cell.task = {
+            ...tt,
+            startTime: time,
+            duration: timerDuration,
+            originalDuration: timerDuration
+          };
+        }
+      }
+
+      // Update tasks / check expired
+      for (const cell of s.grid) {
+        if (cell.task) {
+          const elapsed = time - cell.task.startTime;
+          if (elapsed > cell.task.duration) {
+            cell.task = null;
+            s.tasksExpired++;
+            s.uptime = Math.max(0, s.uptime - 5);
+            if (s.uptime < 50) {
+              s.gameOver = true;
+              spawnBurstParticles(s.particles, cx, cy, '#ef4444', 40);
+              return;
+            }
+          }
+        }
+      }
+
+      // Slowly recover uptime
+      if (s.uptime < 100) s.uptime = Math.min(100, s.uptime + dt * 0.001);
+
+      // === DRAW ===
+      // Uptime bar at top
+      drawTextCentered('UPTIME: ' + Math.floor(s.uptime) + '%', cx, 30, 'bold 16px "Segoe UI", system-ui, sans-serif',
+        s.uptime > 70 ? '#4ade80' : s.uptime > 50 ? '#fbbf24' : '#ef4444');
+      drawProgressBar(cx - 150, 38, 300, 12, s.uptime / 100, s.uptime > 70 ? '#4ade80' : s.uptime > 50 ? '#fbbf24' : '#ef4444');
+
+      // Grid
+      const cellW = Math.min(100, (canvas.width - 120) / s.cols);
+      const cellH = Math.min(90, (canvas.height - 200) / s.rows);
+      const gridW = cellW * s.cols;
+      const gridH = cellH * s.rows;
+      const gx = cx - gridW / 2;
+      const gy = 70;
+
+      for (const cell of s.grid) {
+        const x = gx + cell.c * cellW;
+        const y = gy + cell.r * cellH;
+        const pad = 3;
+        const isCursor = cell.r === s.cursorR && cell.c === s.cursorC;
+
+        // Cell background
+        ctx.fillStyle = cell.task ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.02)';
+        ctx.beginPath(); ctx.roundRect(x + pad, y + pad, cellW - pad * 2, cellH - pad * 2, 6); ctx.fill();
+
+        // Cursor
+        if (isCursor) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(x + pad - 1, y + pad - 1, cellW - pad * 2 + 2, cellH - pad * 2 + 2, 8); ctx.stroke();
+        }
+
+        if (cell.task) {
+          const elapsed = time - cell.task.startTime;
+          const remaining = Math.max(0, 1 - elapsed / cell.task.duration);
+
+          // Task color glow
+          ctx.fillStyle = cell.task.color + '20';
+          ctx.beginPath(); ctx.roundRect(x + pad, y + pad, cellW - pad * 2, cellH - pad * 2, 6); ctx.fill();
+
+          // Emoji
+          ctx.font = '24px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(cell.task.emoji, x + cellW / 2, y + cellH / 2 - 5);
+
+          // Task name
+          ctx.font = 'bold 10px "Segoe UI", system-ui, sans-serif';
+          ctx.fillStyle = cell.task.color;
+          ctx.fillText(cell.task.name, x + cellW / 2, y + cellH / 2 + 15);
+
+          // Points
+          ctx.font = '9px "Segoe UI", system-ui, sans-serif';
+          ctx.fillStyle = '#aaa';
+          ctx.fillText(cell.task.points + 'pts', x + cellW / 2, y + cellH / 2 + 27);
+
+          // Timer bar
+          const barY = y + cellH - pad - 8;
+          const barW = cellW - pad * 2 - 8;
+          ctx.fillStyle = 'rgba(0,0,0,0.4)';
+          ctx.fillRect(x + pad + 4, barY, barW, 5);
+          ctx.fillStyle = remaining < 0.3 ? '#ef4444' : cell.task.color;
+          ctx.fillRect(x + pad + 4, barY, barW * remaining, 5);
+
+          // Urgency flash
+          if (remaining < 0.25) {
+            ctx.fillStyle = 'rgba(239,68,68,' + (Math.sin(time * 0.01) * 0.1 + 0.1) + ')';
+            ctx.beginPath(); ctx.roundRect(x + pad, y + pad, cellW - pad * 2, cellH - pad * 2, 6); ctx.fill();
+          }
+
+          ctx.textAlign = 'left';
+        } else {
+          // Empty cell indicator
+          ctx.fillStyle = 'rgba(255,255,255,0.03)';
+          ctx.beginPath(); ctx.arc(x + cellW / 2, y + cellH / 2, 8, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      // Instructions
+      const instrY = gy + gridH + 20;
+      drawTextCentered('WASD to move cursor | SPACE to process task', cx, instrY,
+        '14px "Segoe UI", system-ui, sans-serif', '#888');
+
+      // Score
+      drawTextCentered('Score: ' + s.score + '  |  Tasks: ' + s.tasksProcessed + '  |  Expired: ' + s.tasksExpired,
+        cx, instrY + 30, '14px "Segoe UI", system-ui, sans-serif', '#aaa');
+
+      drawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = s.score.toLocaleString();
+      document.getElementById('pc-txns').textContent = Math.floor(s.uptime) + '%';
+      document.getElementById('pc-rate').textContent = s.tasksProcessed + '';
+
+      // Minimap - server grid
+      mmCtx.fillStyle = '#0a1520'; mmCtx.fillRect(0, 0, 180, 120);
+      const mmCellW = 30; const mmCellH = 22;
+      const mmGx = (180 - mmCellW * s.cols) / 2;
+      const mmGy = 10;
+      for (const cell of s.grid) {
+        const mx = mmGx + cell.c * mmCellW;
+        const my = mmGy + cell.r * mmCellH;
+        mmCtx.fillStyle = cell.task ? cell.task.color : 'rgba(255,255,255,0.1)';
+        mmCtx.fillRect(mx + 1, my + 1, mmCellW - 2, mmCellH - 2);
+        if (cell.r === s.cursorR && cell.c === s.cursorC) {
+          mmCtx.strokeStyle = '#fff'; mmCtx.lineWidth = 1;
+          mmCtx.strokeRect(mx, my, mmCellW, mmCellH);
+        }
+      }
+      mmCtx.fillStyle = '#fff'; mmCtx.font = '10px sans-serif'; mmCtx.textAlign = 'center';
+      mmCtx.fillText('Uptime: ' + Math.floor(s.uptime) + '%', 90, 108);
+      mmCtx.textAlign = 'left';
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (key === 'w' || key === 'arrowup') s.cursorR = Math.max(0, s.cursorR - 1);
+      if (key === 's' || key === 'arrowdown') s.cursorR = Math.min(s.rows - 1, s.cursorR + 1);
+      if (key === 'a' || key === 'arrowleft') s.cursorC = Math.max(0, s.cursorC - 1);
+      if (key === 'd' || key === 'arrowright') s.cursorC = Math.min(s.cols - 1, s.cursorC + 1);
+    },
+    onSpace() {
+      const s = mgState;
+      if (s.gameOver) return;
+      const cell = s.grid.find(c => c.r === s.cursorR && c.c === s.cursorC);
+      if (cell && cell.task) {
+        const pts = cell.task.points;
+        s.score += pts;
+        s.tasksProcessed++;
+        const cellW = Math.min(100, (canvas.width - 120) / s.cols);
+        const cellH = Math.min(90, (canvas.height - 200) / s.rows);
+        const gxPos = canvas.width / 2 - (cellW * s.cols) / 2 + cell.c * cellW + cellW / 2;
+        const gyPos = 70 + cell.r * cellH + cellH / 2;
+        s.floats.push({ x: gxPos, y: gyPos - 20, text: '+' + pts, color: cell.task.color, life: 40, vy: -2 });
+        spawnBurstParticles(s.particles, gxPos, gyPos, cell.task.color, 8);
+        s.uptime = Math.min(100, s.uptime + 1);
+        cell.task = null;
+      }
+    }
+  },
+
+  // ============================================================
+  // 8. loanEngine - "AI Loan Analyst" (Decision/Judgment)
+  // ============================================================
+  loanEngine: {
+    enter() {
+      function genApp(level) {
+        const credit = Math.floor(400 + Math.random() * 450);
+        const income = Math.floor(25 + Math.random() * 175) * 1000;
+        const debtRatio = Math.floor(5 + Math.random() * 70);
+        const loanAmt = Math.floor(5 + Math.random() * 95) * 1000;
+        const shouldApprove = credit >= 650 && debtRatio < 40 && income > loanAmt * 2;
+        // AI accuracy decreases with level
+        const aiAccuracy = Math.max(0.45, 0.95 - level * 0.06);
+        const aiCorrect = Math.random() < aiAccuracy;
+        const aiRecommends = aiCorrect ? shouldApprove : !shouldApprove;
+        return { credit, income, debtRatio, loanAmt, shouldApprove, aiRecommends, aiConfidence: 50 + Math.floor(Math.random() * 45) };
+      }
+      mgState = {
+        score: 0, totalApps: 30, currentApp: 0, correct: 0,
+        timer: 8, maxTimer: 8, lastTime: performance.now(),
+        app: null, level: 0, decided: false, decisionResult: null, decisionTimer: 0,
+        floats: [], particles: [], gameOver: false, genApp
+      };
+      mgState.app = genApp(0);
+      mgState.currentApp = 1;
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.loanEngine;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+
+      if (s.gameOver) {
+        drawTextCentered('GAME OVER', canvas.width / 2, canvas.height / 2 - 60, 'bold 48px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Final Score: ' + s.score, canvas.width / 2, canvas.height / 2, 'bold 32px "Segoe UI", system-ui, sans-serif', meta.bg1);
+        const accuracy = s.currentApp > 1 ? Math.floor((s.correct / (s.currentApp - 1)) * 100) : 0;
+        drawTextCentered('Accuracy: ' + accuracy + '%', canvas.width / 2, canvas.height / 2 + 50, '24px "Segoe UI", system-ui, sans-serif', '#ccc');
+        drawTextCentered('Press ESC to exit', canvas.width / 2, canvas.height / 2 + 110, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        // HUD
+        document.getElementById('pc-revenue').textContent = s.score;
+        document.getElementById('pc-txns').textContent = accuracy + '%';
+        document.getElementById('pc-rate').textContent = (s.currentApp - 1) + '/' + s.totalApps;
+        return;
+      }
+
+      // Timer
+      if (!s.decided) {
+        s.timer -= dt / 1000;
+        if (s.timer <= 0) {
+          // Timeout = wrong answer
+          s.decided = true;
+          s.decisionResult = 'timeout';
+          s.score -= 25;
+          s.decisionTimer = 1.5;
+        }
+      } else {
+        s.decisionTimer -= dt / 1000;
+        if (s.decisionTimer <= 0) {
+          // Next application
+          s.level = Math.floor(s.currentApp / 5);
+          if (s.currentApp >= s.totalApps) {
+            s.gameOver = true;
+            return;
+          }
+          s.app = s.genApp(s.level);
+          s.currentApp++;
+          s.maxTimer = Math.max(4, 8 - s.level * 0.5);
+          s.timer = s.maxTimer;
+          s.decided = false;
+          s.decisionResult = null;
+        }
+      }
+
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+
+      // Draw application card
+      const cardW = Math.min(600, canvas.width * 0.8);
+      const cardH = 320;
+      const cardX = canvas.width / 2 - cardW / 2;
+      const cardY = canvas.height / 2 - cardH / 2 - 20;
+
+      // Card background
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 16); ctx.fill();
+      ctx.strokeStyle = s.decided ? (s.decisionResult === 'correct' ? '#22c55e' : '#ef4444') : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 16); ctx.stroke();
+
+      // Title
+      drawTextCentered('Loan Application #' + s.currentApp, canvas.width / 2, cardY + 35, 'bold 22px "Segoe UI", system-ui, sans-serif', '#fff');
+
+      // Application data - 2x2 grid
+      const dataY = cardY + 65;
+      const colW = cardW / 2;
+      const app = s.app;
+
+      const fields = [
+        { label: 'Credit Score', value: app.credit, color: app.credit >= 700 ? '#22c55e' : app.credit >= 600 ? '#fbbf24' : '#ef4444' },
+        { label: 'Annual Income', value: '$' + (app.income / 1000) + 'k', color: '#60a5fa' },
+        { label: 'Debt Ratio', value: app.debtRatio + '%', color: app.debtRatio < 30 ? '#22c55e' : app.debtRatio < 50 ? '#fbbf24' : '#ef4444' },
+        { label: 'Loan Amount', value: '$' + (app.loanAmt / 1000) + 'k', color: '#c084fc' },
+      ];
+      fields.forEach((f, i) => {
+        const fx = cardX + (i % 2) * colW + colW / 2;
+        const fy = dataY + Math.floor(i / 2) * 55;
+        ctx.font = '13px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#999';
+        ctx.fillText(f.label, fx, fy);
+        ctx.font = 'bold 26px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = f.color;
+        ctx.fillText(f.value, fx, fy + 28);
+      });
+      ctx.textAlign = 'left';
+
+      // AI recommendation bar
+      const aiY = dataY + 130;
+      drawTextCentered('AI Recommendation', canvas.width / 2, aiY, '14px "Segoe UI", system-ui, sans-serif', '#999');
+      const barW = cardW * 0.6;
+      const barX = canvas.width / 2 - barW / 2;
+      drawProgressBar(barX, aiY + 10, barW, 18, app.aiConfidence / 100, app.aiRecommends ? '#22c55e' : '#ef4444');
+      drawTextCentered(
+        (app.aiRecommends ? 'APPROVE' : 'DENY') + ' (' + app.aiConfidence + '% confidence)',
+        canvas.width / 2, aiY + 44,
+        'bold 16px "Segoe UI", system-ui, sans-serif',
+        app.aiRecommends ? '#22c55e' : '#ef4444'
+      );
+
+      // Controls
+      if (!s.decided) {
+        const ctrlY = cardY + cardH - 45;
+        drawTextCentered('[A] DENY          [D] APPROVE', canvas.width / 2, ctrlY, 'bold 18px "Segoe UI", system-ui, sans-serif', '#fff');
+      }
+
+      // Decision feedback overlay
+      if (s.decided && s.decisionResult) {
+        const fbColor = s.decisionResult === 'correct' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+        ctx.fillStyle = fbColor;
+        ctx.beginPath(); ctx.roundRect(cardX, cardY, cardW, cardH, 16); ctx.fill();
+        const fbText = s.decisionResult === 'correct' ? 'CORRECT!' : s.decisionResult === 'timeout' ? 'TIME UP!' : 'WRONG!';
+        const fbTextColor = s.decisionResult === 'correct' ? '#22c55e' : '#ef4444';
+        drawTextCentered(fbText, canvas.width / 2, cardY + cardH + 30, 'bold 28px "Segoe UI", system-ui, sans-serif', fbTextColor);
+        const answerText = 'Correct answer: ' + (app.shouldApprove ? 'APPROVE' : 'DENY');
+        drawTextCentered(answerText, canvas.width / 2, cardY + cardH + 60, '16px "Segoe UI", system-ui, sans-serif', '#ccc');
+      }
+
+      // Timer bar
+      if (!s.decided) {
+        drawTimerBar(s.timer, s.maxTimer, meta.bg1, cardY - 30);
+      }
+
+      drawFloatingTexts(s.floats);
+      drawParticles(s.particles);
+
+      // Minimap - progress bar
+      mmCtx.fillStyle = '#0a1a14';
+      mmCtx.fillRect(0, 0, 180, 120);
+      mmCtx.fillStyle = '#10b981'; mmCtx.font = 'bold 14px sans-serif'; mmCtx.textAlign = 'center';
+      mmCtx.fillText('Loan Analyst', 90, 25); mmCtx.textAlign = 'left';
+      const pct = s.currentApp / s.totalApps;
+      mmCtx.fillStyle = 'rgba(255,255,255,0.15)'; mmCtx.fillRect(20, 45, 140, 12);
+      mmCtx.fillStyle = '#10b981'; mmCtx.fillRect(20, 45, 140 * pct, 12);
+      mmCtx.fillStyle = '#fff'; mmCtx.font = '11px sans-serif'; mmCtx.textAlign = 'center';
+      mmCtx.fillText(s.currentApp + '/' + s.totalApps + ' apps', 90, 75);
+      const accuracy = s.currentApp > 0 ? Math.floor((s.correct / s.currentApp) * 100) : 0;
+      mmCtx.fillText('Accuracy: ' + accuracy + '%', 90, 95);
+      mmCtx.textAlign = 'left';
+
+      // HUD
+      document.getElementById('pc-revenue').textContent = s.score;
+      document.getElementById('pc-txns').textContent = (s.currentApp > 0 ? Math.floor((s.correct / s.currentApp) * 100) : 0) + '%';
+      document.getElementById('pc-rate').textContent = s.currentApp + '/' + s.totalApps;
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver || s.decided) return;
+      if (key === 'a') {
+        // DENY
+        s.decided = true;
+        const correct = !s.app.shouldApprove;
+        if (correct) { s.score += 100; s.correct++; s.decisionResult = 'correct'; }
+        else { s.score -= 50; s.decisionResult = 'wrong'; }
+        s.decisionTimer = 1.5;
+        const fx = canvas.width / 2;
+        const fy = canvas.height / 2;
+        if (correct) {
+          s.floats.push({ x: fx, y: fy - 80, text: '+100', color: '#22c55e', life: 40, vy: -2 });
+          spawnBurstParticles(s.particles, fx, fy, '#22c55e', 12);
+        } else {
+          s.floats.push({ x: fx, y: fy - 80, text: '-50', color: '#ef4444', life: 40, vy: -2 });
+        }
+      }
+      if (key === 'd') {
+        // APPROVE
+        s.decided = true;
+        const correct = s.app.shouldApprove;
+        if (correct) { s.score += 100; s.correct++; s.decisionResult = 'correct'; }
+        else { s.score -= 50; s.decisionResult = 'wrong'; }
+        s.decisionTimer = 1.5;
+        const fx = canvas.width / 2;
+        const fy = canvas.height / 2;
+        if (correct) {
+          s.floats.push({ x: fx, y: fy - 80, text: '+100', color: '#22c55e', life: 40, vy: -2 });
+          spawnBurstParticles(s.particles, fx, fy, '#22c55e', 12);
+        } else {
+          s.floats.push({ x: fx, y: fy - 80, text: '-50', color: '#ef4444', life: 40, vy: -2 });
+        }
+      }
+    },
+    onSpace() {}
+  }
+};
+
+// --- Dispatcher Functions ---
 function enterMiniGame(configKey) {
-  const config = miniGameConfigs[configKey];
-  if (!config) return;
+  const meta = miniGameMeta[configKey];
+  const handler = miniGameHandlers[configKey];
+  if (!meta || !handler) return;
+
   activeMiniGameKey = configKey;
   gameState = 'miniGame';
 
-  mgRevenue = 0; mgTransactions = 0; mgRevenueRate = 0;
-  mgRevenueHistory = []; mgFloatingTxns = [];
-  mgActiveEvent = null; mgLastEventTime = performance.now(); mgEffects = [];
-  mgPlayer.x = config.worldW / 2; mgPlayer.y = config.worldH / 2;
-  mgPlayer.dir = 0; mgPlayer.moving = false; mgPlayer.jumpZ = 0; mgPlayer.isJumping = false;
+  // Initialize game state
+  mgState = {};
+  handler.enter();
 
-  // Initialize buildings from config
-  mgBuildings = config.buildings.map(b => {
-    const bt = config.buildingTypes[b.type];
-    return {
-      ...b, color: bt.color, colorDark: bt.colorDark,
-      colorBg: bt.color + '20', icon: bt.icon,
-      txnMin: bt.txnMin, txnMax: bt.txnMax, txnInterval: bt.txnInterval,
-      w: bt.sw + (Math.random()-0.5)*12, h: bt.sh + (Math.random()-0.5)*8,
-      lastTxnTime: 0, active: false, btLabel: bt.label
-    };
-  });
-
-  // Generate roads
-  mgRoads = [];
-  for (let y = 0; y <= config.worldH; y += 400) mgRoads.push({ y, horizontal: true });
-  for (let x = 0; x <= config.worldW; x += 400) mgRoads.push({ x, horizontal: false });
-
-  // Generate lamps
-  mgLamps = [];
-  for (let x = 200; x < config.worldW; x += 400) {
-    for (let y = 200; y < config.worldH; y += 400) {
-      mgLamps.push({ x: x-25, y: y-25 }); mgLamps.push({ x: x+25, y: y+25 });
-    }
+  // Set HUD labels
+  const labels = document.querySelectorAll('#pc-hud .pc-stat-label');
+  if (labels.length >= 3) {
+    labels[0].textContent = meta.labels[0] || 'Score';
+    labels[1].textContent = meta.labels[1] || 'Stat';
+    labels[2].textContent = meta.labels[2] || 'Info';
   }
 
-  // Show HUD
+  // Set HUD colors
   const pcHud = document.getElementById('pc-hud');
-  pcHud.style.borderColor = config.playerColor + '50';
-  pcHud.querySelector('.pc-stat-value').style.color = config.playerColor;
+  pcHud.style.borderColor = meta.bg1 + '50';
+  pcHud.querySelector('.pc-stat-value').style.color = meta.bg1;
   pcHud.classList.add('visible');
   document.getElementById('pc-back').classList.add('visible');
+
+  // Show instructions
   const learnEl = document.getElementById('pc-learn');
-  learnEl.textContent = `Walk near buildings to process ${config.name === 'Chip Foundry' ? 'wafers' : config.name === 'Data Center' ? 'compute jobs' : config.name === 'Loan Engine' ? 'loan applications' : 'transactions'}. Watch for events!`;
+  learnEl.textContent = meta.instruction;
   learnEl.classList.add('visible');
+
+  // Hide main world UI
   document.getElementById('discovered').style.display = 'none';
   document.getElementById('disclaimer').style.display = 'none';
   document.getElementById('zone-label').classList.remove('visible');
   document.getElementById('hub-prompt').classList.remove('visible');
   document.getElementById('hud').style.display = 'none';
   document.getElementById('npc-dialogue').classList.remove('visible');
+  document.getElementById('pc-event').classList.remove('visible');
   hideDataPanel();
 
-  setTimeout(() => { if (gameState === 'miniGame') learnEl.classList.remove('visible'); }, 8000);
+  setTimeout(() => { if (gameState === 'miniGame') learnEl.classList.remove('visible'); }, 6000);
 }
 
 function exitMiniGame() {
-  const config = miniGameConfigs[activeMiniGameKey];
-  const hub = config?.hubRef?.();
+  const meta = miniGameMeta[activeMiniGameKey];
+  const hub = meta?.hubRef?.();
   gameState = 'main';
   activeMiniGameKey = null;
+  mgState = {};
+
+  // Restore HUD labels
+  const labels = document.querySelectorAll('#pc-hud .pc-stat-label');
+  if (labels.length >= 3) {
+    labels[0].textContent = 'Revenue';
+    labels[1].textContent = 'Transactions';
+    labels[2].textContent = 'Rate';
+  }
+
+  // Hide mini-game UI
   document.getElementById('pc-hud').classList.remove('visible');
   document.getElementById('pc-back').classList.remove('visible');
   document.getElementById('pc-event').classList.remove('visible');
   document.getElementById('pc-learn').classList.remove('visible');
+
+  // Restore main world UI
   document.getElementById('discovered').style.display = '';
   document.getElementById('disclaimer').style.display = '';
   document.getElementById('hud').style.display = '';
-  // Reset HUD colors to default
+
+  // Reset HUD colors
   const pcHud = document.getElementById('pc-hud');
   pcHud.style.borderColor = 'rgba(0,212,170,0.3)';
   pcHud.querySelector('.pc-stat-value').style.color = '#00d4aa';
+
+  // Return player to hub
   if (hub) { player.x = hub.x + 100; player.y = hub.y + 100; }
 }
 
 function miniGameLoop(time) {
-  const config = miniGameConfigs[activeMiniGameKey];
-  if (!config) return;
+  const handler = miniGameHandlers[activeMiniGameKey];
+  if (!handler) return;
   const dt = Math.min(time - lastTime, 33);
   lastTime = time;
-
-  // Movement
-  let dx = 0, dy = 0;
-  if (keys['w'] || keys['arrowup']) { dy = -1; mgPlayer.dir = 2; }
-  if (keys['s'] || keys['arrowdown']) { dy = 1; mgPlayer.dir = 0; }
-  if (keys['a'] || keys['arrowleft']) { dx = -1; mgPlayer.dir = 1; }
-  if (keys['d'] || keys['arrowright']) { dx = 1; mgPlayer.dir = 3; }
-  mgPlayer.moving = dx !== 0 || dy !== 0;
-  if (mgPlayer.moving) {
-    const len = Math.sqrt(dx*dx+dy*dy); dx /= len; dy /= len;
-    const spd = keys['shift'] ? 5.5 : 3.5;
-    let blocked = false;
-    const nx = mgPlayer.x + dx*spd, ny = mgPlayer.y + dy*spd;
-    for (const b of mgBuildings) {
-      if (Math.abs(nx - b.x) < b.w/2+12 && Math.abs(ny - b.y) < b.h/2+12) { blocked = true; break; }
-    }
-    if (!blocked) { mgPlayer.x += dx*spd; mgPlayer.y += dy*spd; }
-    mgPlayer.x = Math.max(20, Math.min(config.worldW-20, mgPlayer.x));
-    mgPlayer.y = Math.max(20, Math.min(config.worldH-20, mgPlayer.y));
-    mgPlayer.bobPhase += keys['shift'] ? 0.3 : 0.2;
-    mgPlayer.frameTimer++;
-    if (mgPlayer.frameTimer > 8) { mgPlayer.frame = (mgPlayer.frame+1)%4; mgPlayer.frameTimer = 0; }
-  }
-
-  // Jump
-  if (mgPlayer.isJumping) {
-    mgPlayer.jumpVel += 0.5; mgPlayer.jumpZ += mgPlayer.jumpVel;
-    if (mgPlayer.jumpZ >= 0) { mgPlayer.jumpZ = 0; mgPlayer.jumpVel = 0; mgPlayer.isJumping = false; }
-  }
-
-  // Camera
-  const camTx = mgPlayer.x - canvas.width/2, camTy = mgPlayer.y - canvas.height/2;
-  mgCamera.x += (camTx - mgCamera.x) * 0.08;
-  mgCamera.y += (camTy - mgCamera.y) * 0.08;
-  mgCamera.x = Math.max(0, Math.min(config.worldW - canvas.width, mgCamera.x));
-  mgCamera.y = Math.max(0, Math.min(config.worldH - canvas.height, mgCamera.y));
-
-  // Effects
-  mgEffects = mgEffects.filter(e => !e.expiry || time < e.expiry);
-  let revMult = 1, volMult = 1, speedMult = 1, pauseAll = false;
-  const blockedTypes = new Set();
-  for (const eff of mgEffects) {
-    if (eff.revMult && !eff.revMultType) revMult *= eff.revMult;
-    if (eff.volMult && !eff.volMultType) volMult *= eff.volMult;
-    if (eff.speedMult) speedMult *= eff.speedMult;
-    if (eff.pauseAll) pauseAll = true;
-    if (eff.blockType) blockedTypes.add(eff.blockType);
-  }
-
-  // Transactions
-  let revenueThisFrame = 0;
-  if (!pauseAll) {
-    for (const b of mgBuildings) {
-      const dist = Math.hypot(mgPlayer.x - b.x, mgPlayer.y - b.y);
-      b.active = dist < 100;
-      if (b.active && !blockedTypes.has(b.type)) {
-        const interval = b.txnInterval / (speedMult * volMult);
-        if (time - b.lastTxnTime > interval) {
-          b.lastTxnTime = time;
-          const txnVal = Math.floor(b.txnMin + Math.random()*(b.txnMax - b.txnMin));
-          const finalVal = Math.floor(txnVal * revMult);
-          mgRevenue += finalVal; mgTransactions++; revenueThisFrame += finalVal;
-          mgFloatingTxns.push({ x: b.x+(Math.random()-0.5)*40, y: b.y-b.h/2-10, value: finalVal, color: b.color, life: 60, vy: -1.5 });
-        }
-      }
-    }
-  }
-
-  // Revenue rate
-  mgRevenueHistory.push({ time, amount: revenueThisFrame });
-  mgRevenueHistory = mgRevenueHistory.filter(h => time - h.time < 3000);
-  mgRevenueRate = Math.floor(mgRevenueHistory.reduce((s,h) => s+h.amount, 0) / 3);
-  mgFloatingTxns = mgFloatingTxns.filter(ft => { ft.y += ft.vy; ft.life--; return ft.life > 0; });
-
-  // Events
-  if (!mgActiveEvent && time - mgLastEventTime > 20000 + Math.random()*15000) {
-    mgLastEventTime = time;
-    const evt = config.events[Math.floor(Math.random()*config.events.length)];
-    mgActiveEvent = { ...evt, startTime: time };
-    document.getElementById('pc-event-title').textContent = evt.title;
-    document.getElementById('pc-event-desc').textContent = evt.desc;
-    const choicesDiv = document.getElementById('pc-event-choices');
-    choicesDiv.innerHTML = '';
-    evt.choices.forEach((choice, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'pc-event-btn';
-      btn.innerHTML = `<strong>${choice.label}</strong><br><span style="font-size:11px;color:#aaa">${choice.desc}</span>`;
-      btn.onclick = () => applyMgEventChoice(i);
-      choicesDiv.appendChild(btn);
-    });
-    document.getElementById('pc-event').classList.add('visible');
-  }
-  if (mgActiveEvent) {
-    const remaining = Math.max(0, 10 - (time - mgActiveEvent.startTime)/1000);
-    document.getElementById('pc-event-timer').textContent = `Time remaining: ${Math.ceil(remaining)}s`;
-    if (remaining <= 0) applyMgEventChoice(0);
-  }
-
-  // HUD
-  document.getElementById('pc-revenue').textContent = '$' + mgRevenue.toLocaleString();
-  document.getElementById('pc-txns').textContent = mgTransactions.toLocaleString();
-  document.getElementById('pc-rate').textContent = '$' + mgRevenueRate.toLocaleString() + '/s';
-
-  // === DRAW ===
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = config.skyColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Ground blocks
-  for (let bx = 0; bx < Math.ceil(config.worldW/400); bx++) {
-    for (let by = 0; by < Math.ceil(config.worldH/400); by++) {
-      const gx = bx*400+25 - mgCamera.x, gy = by*400+25 - mgCamera.y;
-      if (gx+350 < 0 || gx > canvas.width || gy+350 < 0 || gy > canvas.height) continue;
-      ctx.fillStyle = config.groundColor; ctx.fillRect(gx, gy, 350, 350);
-      const darkerGround = config.groundColor.replace(/[0-9a-f]{2}/gi, m => Math.max(0,parseInt(m,16)-8).toString(16).padStart(2,'0'));
-      ctx.fillStyle = darkerGround; ctx.fillRect(gx+8, gy+8, 334, 334);
-    }
-  }
-
-  // Roads
-  for (const road of mgRoads) {
-    if (road.horizontal !== undefined && road.horizontal) {
-      const ry = road.y - mgCamera.y;
-      if (ry < -30 || ry > canvas.height+30) continue;
-      ctx.fillStyle = config.roadColor; ctx.fillRect(0, ry-20, canvas.width, 40);
-      ctx.strokeStyle = config.playerColor + '40'; ctx.lineWidth = 2; ctx.setLineDash([20,15]);
-      ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(canvas.width, ry); ctx.stroke(); ctx.setLineDash([]);
-    } else {
-      const rx = road.x - mgCamera.x;
-      if (rx < -30 || rx > canvas.width+30) continue;
-      ctx.fillStyle = config.roadColor; ctx.fillRect(rx-20, 0, 40, canvas.height);
-      ctx.strokeStyle = config.playerColor + '40'; ctx.lineWidth = 2; ctx.setLineDash([20,15]);
-      ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, canvas.height); ctx.stroke(); ctx.setLineDash([]);
-    }
-  }
-
-  // Lamps
-  for (const lamp of mgLamps) {
-    const lx = lamp.x - mgCamera.x, ly = lamp.y - mgCamera.y;
-    if (lx < -20 || lx > canvas.width+20 || ly < -30 || ly > canvas.height+20) continue;
-    ctx.fillStyle = '#4a4a5a'; ctx.fillRect(lx-2, ly-18, 4, 22);
-    ctx.fillStyle = config.playerColor + '25';
-    ctx.beginPath(); ctx.arc(lx, ly-20, 12, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = config.playerColor;
-    ctx.beginPath(); ctx.arc(lx, ly-20, 3, 0, Math.PI*2); ctx.fill();
-  }
-
-  // Buildings & player (depth sorted)
-  const sorted = [...mgBuildings].sort((a,b) => a.y - b.y);
-  let playerDrawn = false;
-  for (const b of sorted) {
-    if (!playerDrawn && b.y >= mgPlayer.y) { drawMgPlayer(time, config); playerDrawn = true; }
-    drawMgBuilding(b, time, config);
-  }
-  if (!playerDrawn) drawMgPlayer(time, config);
-
-  // Floating transactions
-  for (const ft of mgFloatingTxns) {
-    const ftx = ft.x - mgCamera.x, fty = ft.y - mgCamera.y;
-    ctx.globalAlpha = ft.life / 60;
-    ctx.fillStyle = ft.color; ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
-    ctx.textAlign = 'center'; ctx.fillText('+$' + ft.value, ftx, fty); ctx.textAlign = 'left';
-  }
-  ctx.globalAlpha = 1;
-
-  // Effects bar
-  if (mgEffects.length > 0) {
-    const barX = canvas.width-210, barY = canvas.height - 30*mgEffects.length - 50;
-    ctx.fillStyle = 'rgba(10,10,30,0.85)'; ctx.beginPath(); ctx.roundRect(barX, barY, 200, 30*mgEffects.length+10, 8); ctx.fill();
-    mgEffects.forEach((eff, i) => {
-      const rem = eff.expiry ? Math.max(0, Math.ceil((eff.expiry-time)/1000)) : '';
-      ctx.fillStyle = config.playerColor; ctx.font = '11px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = 'right';
-      ctx.fillText(`${eff.label || 'Effect'} ${rem ? rem+'s' : ''}`, canvas.width-20, barY+20+30*i);
-    });
-    ctx.textAlign = 'left';
-  }
-
-  // Minimap
-  mmCtx.fillStyle = config.skyColor; mmCtx.fillRect(0, 0, 180, 120);
-  const msx = 180/config.worldW, msy = 120/config.worldH;
-  for (const b of mgBuildings) {
-    mmCtx.fillStyle = b.active ? b.color : b.color+'50';
-    mmCtx.beginPath(); mmCtx.arc(b.x*msx, b.y*msy, b.active ? 3 : 2, 0, Math.PI*2); mmCtx.fill();
-  }
-  mmCtx.strokeStyle = 'rgba(255,255,255,0.3)'; mmCtx.lineWidth = 1;
-  mmCtx.strokeRect(mgCamera.x*msx, mgCamera.y*msy, canvas.width*msx, canvas.height*msy);
-  mmCtx.fillStyle = config.playerColor;
-  mmCtx.beginPath(); mmCtx.arc(mgPlayer.x*msx, mgPlayer.y*msy, 3, 0, Math.PI*2); mmCtx.fill();
-
-  // Vignette
-  const vigGrad3 = ctx.createRadialGradient(canvas.width/2, canvas.height/2, canvas.height*0.4, canvas.width/2, canvas.height/2, canvas.height*0.9);
-  vigGrad3.addColorStop(0, 'transparent'); vigGrad3.addColorStop(1, 'rgba(0,0,0,0.3)');
-  ctx.fillStyle = vigGrad3; ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  if (pauseAll) {
-    ctx.fillStyle = 'rgba(255,50,50,0.08)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#f87171'; ctx.font = 'bold 24px "Segoe UI", system-ui, sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('PROCESSING...', canvas.width/2, 80); ctx.textAlign = 'left';
-  }
-}
-
-function applyMgEventChoice(index) {
-  if (!mgActiveEvent) return;
-  const choice = mgActiveEvent.choices[index];
-  const eff = choice.effect;
-  if (eff.cost) { if (mgRevenue >= eff.cost) mgRevenue -= eff.cost; else { document.getElementById('pc-event').classList.remove('visible'); mgActiveEvent = null; return; } }
-  if (eff.bonus) mgRevenue += eff.bonus;
-  if (eff.riskLoss && Math.random() < eff.riskChance) {
-    mgRevenue = Math.max(0, mgRevenue - eff.riskLoss);
-    mgFloatingTxns.push({ x: mgPlayer.x, y: mgPlayer.y-30, value: -eff.riskLoss, color: '#f87171', life: 90, vy: -1 });
-  }
-  if (eff.duration) mgEffects.push({ ...eff, expiry: performance.now() + eff.duration, label: choice.label });
-  document.getElementById('pc-event').classList.remove('visible');
-  mgActiveEvent = null;
-}
-
-function drawMgBuilding(b, time, config) {
-  const bx = b.x - mgCamera.x, by = b.y - mgCamera.y;
-  if (bx < -b.w-20 || bx > canvas.width+b.w+20 || by < -b.h-40 || by > canvas.height+b.h+20) return;
-  const hw = b.w/2, hh = b.h/2;
-
-  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(bx-hw+4, by-hh+4, b.w, b.h);
-  const grad = ctx.createLinearGradient(bx-hw, by-hh, bx+hw, by+hh);
-  grad.addColorStop(0, b.colorDark); grad.addColorStop(0.5, b.color); grad.addColorStop(1, b.colorDark);
-  ctx.fillStyle = grad; ctx.beginPath(); ctx.roundRect(bx-hw, by-hh, b.w, b.h, 6); ctx.fill();
-
-  if (b.active) {
-    const gGrad = ctx.createRadialGradient(bx, by, 0, bx, by, b.w);
-    gGrad.addColorStop(0, b.color+'30'); gGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = gGrad; ctx.beginPath(); ctx.arc(bx, by, b.w, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = b.color; ctx.lineWidth = 2; ctx.globalAlpha = 0.5+Math.sin(time*0.005)*0.3;
-    ctx.beginPath(); ctx.roundRect(bx-hw-2, by-hh-2, b.w+4, b.h+4, 8); ctx.stroke(); ctx.globalAlpha = 1;
-  }
-
-  const wCols = Math.floor(b.w/20), wRows = Math.floor(b.h/20);
-  for (let wy = 0; wy < wRows; wy++) {
-    for (let wx = 0; wx < wCols; wx++) {
-      const wa = 0.15+Math.sin(time*0.004+wx*2+wy*3)*0.1;
-      ctx.fillStyle = b.active ? `rgba(255,255,200,${wa+0.15})` : `rgba(255,255,255,${wa})`;
-      ctx.fillRect(bx-hw+8+wx*18, by-hh+8+wy*18, 10, 10);
-    }
-  }
-
-  ctx.fillStyle = b.color; ctx.fillRect(bx-hw, by-hh, b.w, 3);
-  ctx.font = b.type === 'gpu' || b.type === 'warehouse' || b.type === 'corporate' || b.type === 'partner' ? '20px sans-serif' : '16px sans-serif';
-  ctx.textAlign = 'center'; ctx.fillText(b.icon, bx, by+5);
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 10px "Segoe UI", system-ui, sans-serif'; ctx.fillText(b.name, bx, by-hh-8);
-  ctx.fillStyle = b.color; ctx.font = '8px "Segoe UI", system-ui, sans-serif'; ctx.fillText(b.btLabel || '', bx, by+hh+14);
-  ctx.textAlign = 'left';
-}
-
-function drawMgPlayer(time, config) {
-  const sx = mgPlayer.x - mgCamera.x, sy = mgPlayer.y - mgCamera.y + mgPlayer.jumpZ;
-  const bob = mgPlayer.moving ? Math.sin(mgPlayer.bobPhase)*2 : 0;
-
-  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath();
-  ctx.ellipse(sx, mgPlayer.y - mgCamera.y + 18, 10, 5, 0, 0, Math.PI*2); ctx.fill();
-  ctx.save(); ctx.translate(sx, sy + bob);
-
-  ctx.fillStyle = config.playerColor; ctx.fillRect(-8, -4, 16, 18);
-  ctx.fillStyle = '#fcd5b0'; ctx.beginPath(); ctx.arc(0, -12, 9, 0, Math.PI*2); ctx.fill();
-  const eo = [[0,1],[-1,0],[0,-1],[1,0]][mgPlayer.dir];
-  ctx.fillStyle = '#2d1f3d';
-  ctx.beginPath(); ctx.arc(-3+eo[0], -13+eo[1], 1.5, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(3+eo[0], -13+eo[1], 1.5, 0, Math.PI*2); ctx.fill();
-
-  const legP = mgPlayer.moving ? Math.sin(mgPlayer.bobPhase*2)*4 : 0;
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(-6, 14, 5, 8+legP); ctx.fillRect(1, 14, 5, 8-legP);
-
-  ctx.fillStyle = config.playerColor + '25'; ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
+  handler.loop(time, dt);
 }
 
 // Handle ESC for mini-game exit
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape' && gameState === 'miniGame') exitMiniGame();
 });
+
+
 
 requestAnimationFrame(gameLoop);
 </script>
