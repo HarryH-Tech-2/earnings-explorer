@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Earnings Explorer - Q4 & FY 2025</title>
-<meta name="description" content="Walk through a vibrant world and discover Q4 & FY 2025 earnings from 13 companies including SoFi, Shopify, ASML, Berkshire Hathaway, MercadoLibre, and more. Play 9 mini-games!">
+<meta name="description" content="Walk through a vibrant world and discover Q4 & FY 2025 earnings from 13 companies including SoFi, Shopify, ASML, Berkshire Hathaway, MercadoLibre, and more. Play 14 mini-games!">
 <meta property="og:title" content="Earnings Explorer - Q4 & FY 2025">
 <meta property="og:description" content="Walk through a vibrant world and discover the latest earnings from SoFi, Shopify, Remitly, Lemonade, and Opendoor. Talk to zombie retail investors and famous investors!">
 <meta property="og:image" content="https://harryh-tech-2.github.io/earnings-explorer/social-preview.png.svg">
@@ -334,6 +334,17 @@ window.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 'e') {
     keys['_ePressed'] = true;
   }
+  // T key - talk to center NPC
+  if (e.key.toLowerCase() === 't' && gameState === 'main' && centerNpcTalkable) {
+    const npcDialogue = document.getElementById('npc-dialogue');
+    centerNpc.dialogueActive = true;
+    npcDialogue.querySelector('.npc-name').textContent = centerNpc.name;
+    npcDialogue.querySelector('.npc-name').style.color = '#fbbf24';
+    npcDialogue.querySelector('.npc-quote').textContent = `"${centerNpc.dialogues[centerNpc.dialogueIndex]}"`;
+    npcDialogue.querySelector('.npc-label').textContent = 'Your Guide';
+    npcDialogue.classList.add('visible');
+    centerNpc.dialogueIndex = (centerNpc.dialogueIndex + 1) % centerNpc.dialogues.length;
+  }
   // Konami code detection
   if (e.key.toLowerCase() === konamiSequence[konamiProgress]) {
     konamiProgress++;
@@ -348,6 +359,19 @@ window.addEventListener('keydown', e => {
     }
   } else {
     konamiProgress = e.key.toLowerCase() === konamiSequence[0] ? 1 : 0;
+  }
+  // SOFI code detection
+  if (e.key.toLowerCase() === sofiSequence[sofiProgress]) {
+    sofiProgress++;
+    if (sofiProgress === sofiSequence.length) {
+      sofiProgress = 0;
+      if (!easterEggsFound.has('sofi_code')) {
+        easterEggsFound.add('sofi_code');
+        showEasterToast('SOFI CODE! You spelled it out — true fan detected!');
+      }
+    }
+  } else {
+    sofiProgress = e.key.toLowerCase() === sofiSequence[0] ? 1 : 0;
   }
   // Triple jump detection
   if (e.key === ' ' || e.code === 'Space') {
@@ -383,6 +407,7 @@ const companies = {
     colorBg: 'rgba(99,102,241,0.12)',
     earningsUrl: 'https://s27.q4cdn.com/749715820/files/doc_financials/2025/q4/2025-Q4-Earnings-Release.pdf',
     x: WORLD_W / 2, y: WORLD_H * 0.78,
+    isPortal: true, miniGameKey: 'moneyMatch', portalLabel: 'Money Match',
     summary: 'SoFi delivered a landmark Q4 with its first-ever $1B revenue quarter. Full-year revenue hit $3.6B (+38%) with GAAP net income of $481M. Record member growth of 1M in Q4 brought total members to 13.7M. The lending platform generated $10.5B in originations while deposits surged to $37.5B. Adjusted EBITDA reached $1.1B (+58%), demonstrating powerful operating leverage across financial services, lending, and tech platform segments.',
     dataPoints: [
       {
@@ -440,6 +465,7 @@ const companies = {
     colorBg: 'rgba(34,197,94,0.12)',
     earningsUrl: 'https://www.shopify.com/news/shopify-q4-2025-financial-results',
     x: WORLD_W / 2, y: WORLD_H * 0.22,
+    isPortal: true, miniGameKey: 'storeRush', portalLabel: 'Store Rush',
     summary: 'Shopify crushed Q4 with $3.67B revenue (+31%) and FY revenue of $11.56B (+30%), actually accelerating from FY 2024. GAAP EPS of $0.57 beat estimates by 30%. GMV hit $123.8B in Q4, with B2B GMV nearly doubling. The company generated $2B in free cash flow for the year at ~17% margins - 10 consecutive quarters of double-digit FCF margins. Shopify now commands over 14% of the US e-commerce market and authorized a $2B share buyback.',
     dataPoints: [
       {
@@ -497,6 +523,7 @@ const companies = {
     colorBg: 'rgba(245,158,11,0.12)',
     earningsUrl: 'https://ir.remitly.com/news-releases/news-release-details/remitly-reports-fourth-quarter-and-full-year-2025-results-above',
     x: WORLD_W * 0.2, y: WORLD_H / 2,
+    isPortal: true, miniGameKey: 'speedSend', portalLabel: 'Speed Send',
     summary: 'Remitly achieved its first full year of GAAP profitability, swinging from a $37M loss to $67.9M net income. Q4 revenue reached $442.2M (+26%) with FY revenue of $1.635B (+29%). Q4 EPS of $0.19 nearly doubled estimates. Send volume surged to $74.9B for the year (+37%), outpacing customer growth and signaling higher engagement. Free cash flow tripled to $283.3M. The stock jumped ~11.3% post-earnings. FY 2026 guidance calls for ~20% growth to nearly $2B.',
     dataPoints: [
       {
@@ -554,6 +581,7 @@ const companies = {
     colorBg: 'rgba(236,72,153,0.12)',
     earningsUrl: 'https://www.businesswire.com/news/home/20260219273586/en/Lemonade-Announces-Fourth-Quarter-and-Full-Year-2025-Financial-Results',
     x: WORLD_W * 0.8, y: WORLD_H / 2,
+    isPortal: true, miniGameKey: 'towerDefense', portalLabel: 'Tower Defense',
     summary: 'Lemonade delivered its "strongest quarter ever" per CEO Daniel Schreiber. Q4 revenue surged 53% to $228M, beating consensus by 5.4%. FY revenue hit $737.9M (+40%). The gross loss ratio improved dramatically from 88% to 52% in two years. Adjusted EBITDA loss narrowed to just $5M in Q4, with positive adjusted FCF of $37M. In-force premium grew to $1.24B (+31%) with 9 consecutive quarters of accelerating growth. Car insurance is now in states covering ~50% of the US market.',
     dataPoints: [
       {
@@ -611,6 +639,7 @@ const companies = {
     colorBg: 'rgba(139,92,246,0.12)',
     earningsUrl: 'https://investor.opendoor.com/news-releases/news-release-details/q4-2025-open-house-opendoor-20-does-what-it-said-it-would-do',
     x: WORLD_W * 0.8, y: WORLD_H * 0.78,
+    isPortal: true, miniGameKey: 'houseMaze', portalLabel: 'House Maze',
     summary: 'Opendoor reported Q4 results reflecting its "Opendoor 2.0" restructuring. Revenue declined 32% YoY to $736M as the company deliberately shrank inventory from 6,417 to 2,867 homes. The $1.1B GAAP net loss includes prior-period inventory write-downs and restructuring charges. Positive signals: Q4 home purchases surged 46% QoQ, inventory days fell 23%, stale homes dropped from 51% to 33%, and Adjusted EBITDA improved YoY. Cash rose to $962M. Management targets Adjusted Net Income breakeven by year-end 2026.',
     dataPoints: [
       {
@@ -1334,6 +1363,23 @@ let nearestHub = null;
 let hubPanelActive = false;
 let celebrationTriggered = false;
 
+// ===== CENTER NPC: HarryH1993 =====
+const centerNpc = {
+  name: 'HarryH1993',
+  x: WORLD_W / 2,
+  y: WORLD_H / 2,
+  dialogueIndex: 0,
+  dialogueActive: false,
+  dialogues: [
+    "Hey! I'm HarryH1993. Welcome to Earnings Explorer!",
+    "My investing philosophy? Simple: think long-term.",
+    "Volatility is noise. I focus on the business fundamentals.",
+    "If you believe in the company, short-term dips are buying opportunities.",
+    "Do your own research. Understand what you own. Be patient."
+  ]
+};
+let centerNpcTalkable = false;
+
 // ===== EASTER EGGS =====
 let easterEggsFound = new Set();
 let easterToastTimer = null;
@@ -1373,6 +1419,36 @@ let discoTimer = 0;
 let jumpCount = 0;
 let lastJumpTime = 0;
 let superJumpActive = false;
+
+// 7. Marathon Runner - walk 10,000+ pixels
+let totalDistanceTraveled = 0;
+
+// 8. Wall Hugger - walk 500+ pixels along world border
+let borderWalkDistance = 0;
+
+// 9. All Games Champion - exit all 13 unique mini-games
+let completedMiniGames = new Set();
+
+// 10. Speed Demon - sprint 10+ continuous seconds
+let sprintFrames = 0;
+
+// 11. Night Owl - play 5+ minutes
+let gameStartTime = Date.now();
+
+// 12. SOFI Code - type S-O-F-I in sequence
+const sofiSequence = ['s','o','f','i'];
+let sofiProgress = 0;
+
+// ===== WORLD THEMES =====
+let worldThemeIndex = 0;
+const worldThemes = [
+  { name: 'Default',  sky1: '#1a2744', sky2: '#2a3f5f', grassR: 22, grassG: 45, grassB: 30, grassMulR: 10, grassMulG: 25, grassMulB: 12, grassDetailColor: 'rgba(100,200,100,0.2)', ambientColor: '220,240,255', canopy1: '#228b3a', canopy2: '#2ea84a', canopy3: '#40c463', flowerGlow: 0.8 },
+  { name: 'Dawn',     sky1: '#2d1b4e', sky2: '#5b3a7a', grassR: 28, grassG: 40, grassB: 35, grassMulR: 12, grassMulG: 20, grassMulB: 15, grassDetailColor: 'rgba(180,140,220,0.2)', ambientColor: '200,180,255', canopy1: '#3a5f8a', canopy2: '#4a7aaa', canopy3: '#6a9acc', flowerGlow: 0.9 },
+  { name: 'Twilight', sky1: '#1a1a3e', sky2: '#0d0d2b', grassR: 15, grassG: 30, grassB: 40, grassMulR: 8,  grassMulG: 18, grassMulB: 20, grassDetailColor: 'rgba(80,120,200,0.2)',  ambientColor: '140,160,255', canopy1: '#1a4a3a', canopy2: '#2a5a4a', canopy3: '#3a7a5a', flowerGlow: 1.0 },
+  { name: 'Aurora',   sky1: '#0a2a2a', sky2: '#1a4a3a', grassR: 18, grassG: 50, grassB: 38, grassMulR: 8,  grassMulG: 30, grassMulB: 18, grassDetailColor: 'rgba(100,255,180,0.25)', ambientColor: '150,255,200', canopy1: '#1a6a4a', canopy2: '#2a8a5a', canopy3: '#4aaa7a', flowerGlow: 0.9 },
+  { name: 'Sunset',   sky1: '#3a1a0a', sky2: '#5a2a1a', grassR: 35, grassG: 38, grassB: 20, grassMulR: 15, grassMulG: 20, grassMulB: 8,  grassDetailColor: 'rgba(220,160,80,0.2)',  ambientColor: '255,200,140', canopy1: '#5a3a1a', canopy2: '#7a4a2a', canopy3: '#9a6a3a', flowerGlow: 0.85 },
+  { name: 'Midnight', sky1: '#0a0a1e', sky2: '#141430', grassR: 12, grassG: 25, grassB: 22, grassMulR: 6,  grassMulG: 15, grassMulB: 10, grassDetailColor: 'rgba(60,100,140,0.15)',  ambientColor: '140,180,220', canopy1: '#152a20', canopy2: '#1a3a2a', canopy3: '#254a3a', flowerGlow: 1.0 },
+];
 
 // ===== CHARACTER =====
 const player = {
@@ -1425,10 +1501,11 @@ document.getElementById('disc-total').textContent = allDataPoints.length;
 // ===== DRAWING FUNCTIONS =====
 
 function drawGround(time) {
-  // Sky gradient - bright cheerful blue
+  const theme = worldThemes[worldThemeIndex];
+  // Sky gradient from theme
   const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  skyGrad.addColorStop(0, '#1a2744');
-  skyGrad.addColorStop(1, '#2a3f5f');
+  skyGrad.addColorStop(0, theme.sky1);
+  skyGrad.addColorStop(1, theme.sky2);
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1442,14 +1519,15 @@ function drawGround(time) {
       const sx = col * TILE - camera.x;
       const sy = row * TILE - camera.y;
       const v = grassMap[row]?.[col] || 0;
-      const g = Math.floor(45 + v * 25);
-      const b = Math.floor(30 + v * 12);
-      ctx.fillStyle = `rgb(${Math.floor(22 + v*10)},${g},${b})`;
+      const r = Math.floor(theme.grassR + v * theme.grassMulR);
+      const g = Math.floor(theme.grassG + v * theme.grassMulG);
+      const b = Math.floor(theme.grassB + v * theme.grassMulB);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
       ctx.fillRect(sx, sy, TILE + 1, TILE + 1);
 
-      // Brighter grass detail
+      // Grass detail
       if (v > 0.7) {
-        ctx.fillStyle = `rgba(100,200,100,0.2)`;
+        ctx.fillStyle = theme.grassDetailColor;
         ctx.fillRect(sx + TILE*0.3, sy + TILE*0.4, 2, 6);
         ctx.fillRect(sx + TILE*0.6, sy + TILE*0.2, 2, 5);
       }
@@ -1488,16 +1566,17 @@ function drawTree(tree, time) {
   ctx.fillStyle = '#5c3d2e';
   ctx.fillRect(sx - 4, sy - tree.size * 0.5, 8, tree.size * 0.8);
 
-  // Canopy - brighter greens
-  ctx.fillStyle = '#228b3a';
+  // Canopy - themed colors
+  const theme = worldThemes[worldThemeIndex];
+  ctx.fillStyle = theme.canopy1;
   ctx.beginPath();
   ctx.arc(sx + sway, sy - tree.size * 0.6, tree.size * 0.55, 0, Math.PI*2);
   ctx.fill();
-  ctx.fillStyle = '#2ea84a';
+  ctx.fillStyle = theme.canopy2;
   ctx.beginPath();
   ctx.arc(sx + sway - 5, sy - tree.size * 0.7, tree.size * 0.4, 0, Math.PI*2);
   ctx.fill();
-  ctx.fillStyle = '#40c463';
+  ctx.fillStyle = theme.canopy3;
   ctx.beginPath();
   ctx.arc(sx + sway + 6, sy - tree.size * 0.75, tree.size * 0.3, 0, Math.PI*2);
   ctx.fill();
@@ -1508,7 +1587,7 @@ function drawFlower(flower, time) {
   if (sx < -10 || sx > canvas.width+10 || sy < -10 || sy > canvas.height+10) return;
   const s = flower.size + Math.sin(time*0.003 + flower.phase)*0.5;
   ctx.fillStyle = flower.color;
-  ctx.globalAlpha = 0.8;
+  ctx.globalAlpha = worldThemes[worldThemeIndex].flowerGlow;
   ctx.beginPath();
   ctx.arc(sx, sy, s, 0, Math.PI*2);
   ctx.fill();
@@ -2442,31 +2521,6 @@ function drawCenterHub(time) {
   ctx.arc(sx, sy, 60, 0, Math.PI*2);
   ctx.fill();
 
-  // Fountain
-  const fountainY = sy - 10;
-  ctx.fillStyle = '#4a5568';
-  ctx.beginPath();
-  ctx.ellipse(sx, fountainY + 15, 30, 10, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle = '#2d3748';
-  ctx.fillRect(sx - 6, fountainY - 15, 12, 30);
-  ctx.fillStyle = '#4a5568';
-  ctx.beginPath();
-  ctx.ellipse(sx, fountainY - 15, 10, 5, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  // Water particles
-  for (let i = 0; i < 5; i++) {
-    const angle = (time * 0.003 + i * Math.PI * 2 / 5) % (Math.PI * 2);
-    const dist = 8 + Math.sin(time * 0.005 + i) * 4;
-    const wx = sx + Math.cos(angle) * dist;
-    const wy = fountainY - 18 + Math.sin(time * 0.004 + i * 2) * 6;
-    ctx.fillStyle = `rgba(100,180,255,${0.3 + Math.sin(time*0.005+i)*0.2})`;
-    ctx.beginPath();
-    ctx.arc(wx, wy, 2, 0, Math.PI*2);
-    ctx.fill();
-  }
-
   // Direction signs - dynamically generated from all companies + shift4
   const allHubsForSigns = [...Object.values(companies), shift4Hub];
   const centerX2 = WORLD_W/2, centerY2 = WORLD_H/2;
@@ -2484,14 +2538,105 @@ function drawCenterHub(time) {
   }
   ctx.textAlign = 'left';
 
+  // === HarryH1993 NPC ===
+  const npcX = sx, npcY = sy;
+  const breathe = Math.sin(time * 0.003) * 1.5;
+  const sc = 1.3; // scale
+
+  // Golden aura
+  const auraAlpha = 0.12 + Math.sin(time * 0.002) * 0.06;
+  const auraGrad = ctx.createRadialGradient(npcX, npcY - 15 * sc, 0, npcX, npcY - 15 * sc, 35 * sc);
+  auraGrad.addColorStop(0, `rgba(251,191,36,${auraAlpha})`);
+  auraGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = auraGrad;
+  ctx.beginPath();
+  ctx.arc(npcX, npcY - 15 * sc, 35 * sc, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(npcX, npcY + 18 * sc, 12 * sc, 4 * sc, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Legs (jeans)
+  ctx.fillStyle = '#1e3a5f';
+  ctx.fillRect(npcX - 5 * sc, npcY + 2 * sc + breathe, 4 * sc, 16 * sc);
+  ctx.fillRect(npcX + 1 * sc, npcY + 2 * sc + breathe, 4 * sc, 16 * sc);
+
+  // Shoes
+  ctx.fillStyle = '#3d2010';
+  ctx.fillRect(npcX - 6 * sc, npcY + 17 * sc + breathe, 6 * sc, 3 * sc);
+  ctx.fillRect(npcX, npcY + 17 * sc + breathe, 6 * sc, 3 * sc);
+
+  // Body (blue polo)
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(npcX - 8 * sc, npcY - 18 * sc + breathe, 16 * sc, 22 * sc);
+  // Polo collar
+  ctx.fillStyle = '#1d4ed8';
+  ctx.fillRect(npcX - 4 * sc, npcY - 19 * sc + breathe, 8 * sc, 3 * sc);
+
+  // Arms
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(npcX - 12 * sc, npcY - 15 * sc + breathe, 4 * sc, 14 * sc);
+  ctx.fillRect(npcX + 8 * sc, npcY - 15 * sc + breathe, 4 * sc, 14 * sc);
+  // Hands (skin)
+  ctx.fillStyle = '#d4a574';
+  ctx.beginPath();
+  ctx.arc(npcX - 10 * sc, npcY - 1 * sc + breathe, 2.5 * sc, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(npcX + 10 * sc, npcY - 1 * sc + breathe, 2.5 * sc, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head (tanned skin)
+  ctx.fillStyle = '#d4a574';
+  ctx.beginPath();
+  ctx.arc(npcX, npcY - 25 * sc + breathe, 9 * sc, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hair (brown)
+  ctx.fillStyle = '#5c3317';
+  ctx.beginPath();
+  ctx.arc(npcX, npcY - 28 * sc + breathe, 9.5 * sc, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(npcX - 9.5 * sc, npcY - 28 * sc + breathe, 19 * sc, 4 * sc);
+
+  // Eyes (brown)
+  ctx.fillStyle = '#3d2010';
+  ctx.beginPath();
+  ctx.arc(npcX - 3.5 * sc, npcY - 26 * sc + breathe, 1.5 * sc, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(npcX + 3.5 * sc, npcY - 26 * sc + breathe, 1.5 * sc, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Smile
+  ctx.strokeStyle = '#3d2010';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(npcX, npcY - 22 * sc + breathe, 3 * sc, 0.1, Math.PI - 0.1);
+  ctx.stroke();
+
   // Welcome text
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Earnings Explorer', sx, sy - 55);
+  ctx.fillText('Welcome to Earnings Explorer!', npcX, npcY - 48 * sc);
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 11px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('HarryH1993', npcX, npcY - 38 * sc);
   ctx.fillStyle = '#888';
   ctx.font = '10px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText('Q4 & FY 2025', sx, sy - 42);
+  ctx.fillText('Q4 & FY 2025', npcX, npcY + 25 * sc);
+
+  // Talk prompt when nearby
+  if (centerNpcTalkable) {
+    const promptAlpha = 0.6 + Math.sin(time * 0.005) * 0.3;
+    ctx.fillStyle = `rgba(74,222,128,${promptAlpha})`;
+    ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+    ctx.fillText('Press T to talk', npcX, npcY + 32 * sc);
+  }
   ctx.textAlign = 'left';
 }
 
@@ -2525,7 +2670,7 @@ function drawParticles(time) {
     const sx = p.x - camera.x, sy = p.y - camera.y;
     if (sx < -10 || sx > canvas.width+10 || sy < -10 || sy > canvas.height+10) continue;
     const a = 0.25 + Math.sin(p.phase) * 0.15;
-    ctx.fillStyle = `rgba(220,240,255,${a})`;
+    ctx.fillStyle = `rgba(${worldThemes[worldThemeIndex].ambientColor},${a})`;
     ctx.beginPath();
     ctx.arc(sx, sy, p.size, 0, Math.PI*2);
     ctx.fill();
@@ -2533,7 +2678,7 @@ function drawParticles(time) {
 }
 
 function drawMinimap() {
-  mmCtx.fillStyle = '#1a2744';
+  mmCtx.fillStyle = worldThemes[worldThemeIndex].sky1;
   mmCtx.fillRect(0, 0, 180, 120);
 
   const scaleX = 180 / WORLD_W;
@@ -2654,7 +2799,7 @@ function updateZoneLabel() {
     zone = shift4Hub;
   }
   if (Math.hypot(player.x - WORLD_W/2, player.y - WORLD_H/2) < 100) {
-    label.textContent = 'Central Hub';
+    label.textContent = "HarryH1993's Hub";
     label.classList.add('visible');
   } else if (zone) {
     label.textContent = `${zone.name} (${zone.ticker})`;
@@ -2844,6 +2989,45 @@ function gameLoop(time) {
     if (discoTimer <= 0) discoMode = false;
   }
 
+  // Marathon Runner - track total distance
+  if (player.moving) {
+    const curSpeed = keys['shift'] ? player.sprintSpeed : player.speed;
+    totalDistanceTraveled += curSpeed;
+    if (!easterEggsFound.has('marathon') && totalDistanceTraveled >= 10000) {
+      easterEggsFound.add('marathon');
+      showEasterToast('MARATHON RUNNER! You walked over 10,000 pixels!');
+    }
+  }
+
+  // Wall Hugger - track distance along world border
+  if (player.moving && (player.x <= BORDER + 5 || player.x >= WORLD_W - BORDER - 5 || player.y <= BORDER + 5 || player.y >= WORLD_H - BORDER - 5)) {
+    const curSpeed = keys['shift'] ? player.sprintSpeed : player.speed;
+    borderWalkDistance += curSpeed;
+    if (!easterEggsFound.has('wall_hugger') && borderWalkDistance >= 500) {
+      easterEggsFound.add('wall_hugger');
+      showEasterToast('WALL HUGGER! You love living on the edge!');
+    }
+  } else {
+    borderWalkDistance = 0;
+  }
+
+  // Speed Demon - sprint 10+ continuous seconds
+  if (player.moving && keys['shift']) {
+    sprintFrames++;
+    if (!easterEggsFound.has('speed_demon') && sprintFrames >= 600) {
+      easterEggsFound.add('speed_demon');
+      showEasterToast('SPEED DEMON! 10 seconds of non-stop sprinting!');
+    }
+  } else {
+    sprintFrames = 0;
+  }
+
+  // Night Owl - play 5+ minutes
+  if (!easterEggsFound.has('night_owl') && Date.now() - gameStartTime >= 300000) {
+    easterEggsFound.add('night_owl');
+    showEasterToast('NIGHT OWL! You\'ve been exploring for 5+ minutes!');
+  }
+
   // Portal and hub proximity detection
   const hubPrompt = document.getElementById('hub-prompt');
   let portalNear = null;
@@ -2937,9 +3121,16 @@ function gameLoop(time) {
     }
   }
 
+  // Center NPC proximity detection
+  centerNpcTalkable = Math.hypot(player.x - centerNpc.x, player.y - centerNpc.y) < 80;
+  if (!centerNpcTalkable && centerNpc.dialogueActive) {
+    centerNpc.dialogueActive = false;
+    document.getElementById('npc-dialogue').classList.remove('visible');
+  }
+
   // NPC proximity & dialogue
   const npcDialogue = document.getElementById('npc-dialogue');
-  let foundNpc = false;
+  let foundNpc = centerNpc.dialogueActive;
 
   for (const z of zombieInvestors) {
     if (Math.hypot(player.x - z.x, player.y - z.y) < 55) {
@@ -4161,6 +4352,41 @@ const miniGameMeta = {
     labels: ['Score', 'Accuracy', 'Apps'],
     instruction: 'D to Approve, A to Deny loan applications. Use the data wisely!',
     hubRef: () => companies.pgy
+  },
+  moneyMatch: {
+    name: 'Money Match',
+    bg1: '#6366f1', bg2: '#3730a3',
+    labels: ['Matches', 'Moves', 'Pairs Left'],
+    instruction: 'Arrow keys to move cursor, Space to flip cards. Match financial pairs!',
+    hubRef: () => companies.sofi
+  },
+  storeRush: {
+    name: 'Store Rush',
+    bg1: '#22c55e', bg2: '#15803d',
+    labels: ['Score', 'Lines', 'Level'],
+    instruction: 'A/D move, W rotate, S soft drop, Space hard drop. Fill rows!',
+    hubRef: () => companies.shopify
+  },
+  speedSend: {
+    name: 'Speed Send',
+    bg1: '#f59e0b', bg2: '#b45309',
+    labels: ['Score', 'Sends', 'Time'],
+    instruction: 'Type the country name and press Enter to send! Beat the clock!',
+    hubRef: () => companies.remitly
+  },
+  towerDefense: {
+    name: 'Tower Defense',
+    bg1: '#ec4899', bg2: '#be185d',
+    labels: ['Score', 'Lives', 'Wave'],
+    instruction: 'A/D move umbrella, Space to deploy shield. Protect the houses!',
+    hubRef: () => companies.lemonade
+  },
+  houseMaze: {
+    name: 'House Maze',
+    bg1: '#8b5cf6', bg2: '#5b21b6',
+    labels: ['Value', 'Houses', 'Time'],
+    instruction: 'Arrow keys to navigate. Collect houses, find the exit before time runs out!',
+    hubRef: () => companies.opendoor
   }
 };
 
@@ -6258,8 +6484,940 @@ const miniGameHandlers = {
       }
     },
     onSpace() {}
+  },
+
+  // ============================================================
+  // 9. moneyMatch - "Money Match" (Card Memory) - SoFi
+  // ============================================================
+  moneyMatch: {
+    enter() {
+      const pairNames = [
+        'APR', 'ETF', 'IPO', 'ROI', 'P/E', 'EPS', 'GAAP', 'EBITDA'
+      ];
+      const cards = [];
+      for (const name of pairNames) {
+        cards.push({ label: name, matched: false, flipped: false });
+        cards.push({ label: name, matched: false, flipped: false });
+      }
+      // Shuffle
+      for (let i = cards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [cards[i], cards[j]] = [cards[j], cards[i]];
+      }
+      mgState = {
+        cards, cols: 4, rows: 4, cursorX: 0, cursorY: 0,
+        firstPick: -1, secondPick: -1, lockout: false, lockTimer: 0,
+        matches: 0, moves: 0, pairsLeft: 8,
+        gameOver: false, floats: [], particles: [],
+        cardColors: ['#6366f1','#818cf8','#a78bfa','#c4b5fd','#60a5fa','#38bdf8','#34d399','#fbbf24']
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.moneyMatch;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      if (s.lockout) {
+        s.lockTimer -= dt;
+        if (s.lockTimer <= 0) {
+          s.lockout = false;
+          if (s.firstPick !== -1 && s.secondPick !== -1) {
+            if (s.cards[s.firstPick].label === s.cards[s.secondPick].label) {
+              s.cards[s.firstPick].matched = true;
+              s.cards[s.secondPick].matched = true;
+              s.matches++;
+              s.pairsLeft--;
+              spawnBurstParticles(s.particles, cx, cy, '#4ade80', 15);
+              s.floats.push({ x: cx, y: cy - 100, text: 'MATCH!', color: '#4ade80', life: 40, vy: -2 });
+              if (s.pairsLeft <= 0) {
+                s.gameOver = true;
+                spawnBurstParticles(s.particles, cx, cy, '#fbbf24', 40);
+              }
+            } else {
+              s.cards[s.firstPick].flipped = false;
+              s.cards[s.secondPick].flipped = false;
+            }
+            s.firstPick = -1;
+            s.secondPick = -1;
+          }
+        }
+      }
+
+      if (s.gameOver) {
+        drawTextCentered('ALL MATCHED!', cx, cy - 60, 'bold 48px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+        drawTextCentered('Moves: ' + s.moves, cx, cy, 'bold 30px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Press ESC to exit', cx, cy + 60, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        mgDrawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.matches;
+        document.getElementById('pc-txns').textContent = s.moves;
+        document.getElementById('pc-rate').textContent = '0';
+        return;
+      }
+
+      // Draw 4x4 grid
+      const cardW = 100, cardH = 70, gap = 12;
+      const gridW = s.cols * (cardW + gap) - gap;
+      const gridH = s.rows * (cardH + gap) - gap;
+      const startX = cx - gridW / 2;
+      const startY = cy - gridH / 2 + 10;
+
+      for (let i = 0; i < s.cards.length; i++) {
+        const col = i % s.cols;
+        const row = Math.floor(i / s.cols);
+        const bx = startX + col * (cardW + gap);
+        const by = startY + row * (cardH + gap);
+        const card = s.cards[i];
+        const isCursor = col === s.cursorX && row === s.cursorY;
+
+        if (card.matched) {
+          ctx.fillStyle = 'rgba(74,222,128,0.15)';
+          ctx.beginPath(); ctx.roundRect(bx, by, cardW, cardH, 8); ctx.fill();
+          ctx.fillStyle = '#4ade80';
+          ctx.font = 'bold 18px "Segoe UI", system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(card.label, bx + cardW / 2, by + cardH / 2 + 6);
+        } else if (card.flipped) {
+          ctx.fillStyle = 'rgba(99,102,241,0.3)';
+          ctx.beginPath(); ctx.roundRect(bx, by, cardW, cardH, 8); ctx.fill();
+          ctx.fillStyle = '#c4b5fd';
+          ctx.font = 'bold 18px "Segoe UI", system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(card.label, bx + cardW / 2, by + cardH / 2 + 6);
+        } else {
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.beginPath(); ctx.roundRect(bx, by, cardW, cardH, 8); ctx.fill();
+          ctx.fillStyle = '#6366f1';
+          ctx.font = 'bold 22px "Segoe UI", system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('$', bx + cardW / 2, by + cardH / 2 + 8);
+        }
+
+        if (isCursor) {
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(bx - 2, by - 2, cardW + 4, cardH + 4, 10); ctx.stroke();
+        }
+      }
+      ctx.textAlign = 'left';
+
+      drawTextCentered('Arrow keys to move, Space to flip', cx, startY + gridH + 35, '14px "Segoe UI", system-ui, sans-serif', '#888');
+      mgDrawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      document.getElementById('pc-revenue').textContent = s.matches;
+      document.getElementById('pc-txns').textContent = s.moves;
+      document.getElementById('pc-rate').textContent = s.pairsLeft;
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver || s.lockout) return;
+      if (key === 'arrowleft' || key === 'a') s.cursorX = Math.max(0, s.cursorX - 1);
+      if (key === 'arrowright' || key === 'd') s.cursorX = Math.min(s.cols - 1, s.cursorX + 1);
+      if (key === 'arrowup' || key === 'w') s.cursorY = Math.max(0, s.cursorY - 1);
+      if (key === 'arrowdown' || key === 's') s.cursorY = Math.min(s.rows - 1, s.cursorY + 1);
+      if (key === ' ') {
+        const idx = s.cursorY * s.cols + s.cursorX;
+        const card = s.cards[idx];
+        if (card.matched || card.flipped) return;
+        card.flipped = true;
+        s.moves++;
+        if (s.firstPick === -1) {
+          s.firstPick = idx;
+        } else {
+          s.secondPick = idx;
+          s.lockout = true;
+          s.lockTimer = 600;
+        }
+      }
+    },
+    onSpace() {}
+  },
+
+  // ============================================================
+  // 10. storeRush - "Store Rush" (Tetris-like) - Shopify
+  // ============================================================
+  storeRush: {
+    enter() {
+      const cols = 10, rows = 20;
+      const grid = [];
+      for (let r = 0; r < rows; r++) grid.push(new Array(cols).fill(0));
+      const pieces = [
+        { shape: [[1,1,1,1]], color: '#22c55e' },           // I
+        { shape: [[1,1],[1,1]], color: '#4ade80' },          // O
+        { shape: [[0,1,0],[1,1,1]], color: '#15803d' },      // T
+        { shape: [[1,0],[1,0],[1,1]], color: '#86efac' },    // L
+        { shape: [[0,1],[0,1],[1,1]], color: '#bbf7d0' },    // J
+        { shape: [[0,1,1],[1,1,0]], color: '#34d399' },      // S
+        { shape: [[1,1,0],[0,1,1]], color: '#6ee7b7' },      // Z
+      ];
+      function mgRandomPiece() {
+        const p = pieces[Math.floor(Math.random() * pieces.length)];
+        return { shape: p.shape.map(r => [...r]), color: p.color, x: 3, y: 0 };
+      }
+      mgState = {
+        grid, cols, rows, pieces, mgRandomPiece,
+        current: mgRandomPiece(), next: mgRandomPiece(),
+        score: 0, lines: 0, level: 1,
+        dropTimer: 0, dropInterval: 500,
+        gameOver: false, floats: [], particles: []
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.storeRush;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      if (s.gameOver) {
+        drawTextCentered('GAME OVER', cx, cy - 60, 'bold 48px "Segoe UI", system-ui, sans-serif', '#ef4444');
+        drawTextCentered('Score: ' + s.score, cx, cy, 'bold 30px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Lines: ' + s.lines, cx, cy + 40, '24px "Segoe UI", system-ui, sans-serif', '#4ade80');
+        drawTextCentered('Press ESC to exit', cx, cy + 100, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        mgDrawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score;
+        document.getElementById('pc-txns').textContent = s.lines;
+        document.getElementById('pc-rate').textContent = s.level;
+        return;
+      }
+
+      // Drop timer
+      s.dropTimer += dt;
+      if (s.dropTimer >= s.dropInterval) {
+        s.dropTimer = 0;
+        if (!mgTryMove(s, 0, 1)) {
+          mgLockPiece(s);
+        }
+      }
+
+      // Draw grid
+      const cellSize = Math.min(24, (canvas.height - 80) / s.rows);
+      const gridW = s.cols * cellSize;
+      const gridH = s.rows * cellSize;
+      const ox = cx - gridW / 2;
+      const oy = cy - gridH / 2 + 10;
+
+      // Grid background
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(ox, oy, gridW, gridH);
+
+      // Grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      for (let r = 0; r <= s.rows; r++) {
+        ctx.beginPath(); ctx.moveTo(ox, oy + r * cellSize); ctx.lineTo(ox + gridW, oy + r * cellSize); ctx.stroke();
+      }
+      for (let c = 0; c <= s.cols; c++) {
+        ctx.beginPath(); ctx.moveTo(ox + c * cellSize, oy); ctx.lineTo(ox + c * cellSize, oy + gridH); ctx.stroke();
+      }
+
+      // Placed blocks
+      for (let r = 0; r < s.rows; r++) {
+        for (let c = 0; c < s.cols; c++) {
+          if (s.grid[r][c]) {
+            ctx.fillStyle = s.grid[r][c];
+            ctx.fillRect(ox + c * cellSize + 1, oy + r * cellSize + 1, cellSize - 2, cellSize - 2);
+          }
+        }
+      }
+
+      // Current piece
+      if (s.current) {
+        ctx.fillStyle = s.current.color;
+        for (let r = 0; r < s.current.shape.length; r++) {
+          for (let c = 0; c < s.current.shape[r].length; c++) {
+            if (s.current.shape[r][c]) {
+              const px = ox + (s.current.x + c) * cellSize + 1;
+              const py = oy + (s.current.y + r) * cellSize + 1;
+              ctx.fillRect(px, py, cellSize - 2, cellSize - 2);
+            }
+          }
+        }
+      }
+
+      // Next piece preview
+      drawTextCentered('NEXT', cx + gridW / 2 + 50, oy + 10, 'bold 12px "Segoe UI", system-ui, sans-serif', '#888');
+      if (s.next) {
+        ctx.fillStyle = s.next.color;
+        for (let r = 0; r < s.next.shape.length; r++) {
+          for (let c = 0; c < s.next.shape[r].length; c++) {
+            if (s.next.shape[r][c]) {
+              ctx.fillRect(cx + gridW / 2 + 30 + c * 16, oy + 20 + r * 16, 14, 14);
+            }
+          }
+        }
+      }
+
+      mgDrawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      document.getElementById('pc-revenue').textContent = s.score;
+      document.getElementById('pc-txns').textContent = s.lines;
+      document.getElementById('pc-rate').textContent = s.level;
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (key === 'a' || key === 'arrowleft') mgTryMove(s, -1, 0);
+      if (key === 'd' || key === 'arrowright') mgTryMove(s, 1, 0);
+      if (key === 's' || key === 'arrowdown') {
+        if (!mgTryMove(s, 0, 1)) mgLockPiece(s);
+      }
+      if (key === 'w' || key === 'arrowup') mgRotatePiece(s);
+      if (key === ' ') {
+        // Hard drop
+        while (mgTryMove(s, 0, 1)) {}
+        mgLockPiece(s);
+      }
+    },
+    onSpace() {}
+  },
+
+  // ============================================================
+  // 11. speedSend - "Speed Send" (Typing Speed) - Remitly
+  // ============================================================
+  speedSend: {
+    enter() {
+      const countries = [
+        'Mexico', 'India', 'Philippines', 'Guatemala', 'Colombia',
+        'Nigeria', 'Brazil', 'Kenya', 'Vietnam', 'Pakistan',
+        'Peru', 'Ecuador', 'Ghana', 'Nepal', 'Egypt',
+        'Morocco', 'Honduras', 'Jamaica', 'Haiti', 'Ethiopia'
+      ];
+      // Shuffle
+      for (let i = countries.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [countries[i], countries[j]] = [countries[j], countries[i]];
+      }
+      mgState = {
+        countries, currentIndex: 0,
+        typed: '', score: 0, sends: 0,
+        timeLeft: 60, lastTime: performance.now(),
+        gameOver: false, floats: [], particles: [],
+        flash: 0, flashColor: '#22c55e'
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.speedSend;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      // Update timer
+      const now = performance.now();
+      if (!s.gameOver) {
+        s.timeLeft -= (now - s.lastTime) / 1000;
+        if (s.timeLeft <= 0) {
+          s.timeLeft = 0;
+          s.gameOver = true;
+          spawnBurstParticles(s.particles, cx, cy, '#fbbf24', 30);
+        }
+      }
+      s.lastTime = now;
+
+      if (s.flash > 0) s.flash -= 0.04;
+
+      if (s.gameOver) {
+        drawTextCentered("TIME'S UP!", cx, cy - 80, 'bold 48px "Segoe UI", system-ui, sans-serif', '#ef4444');
+        drawTextCentered('Remittances Sent: ' + s.sends, cx, cy - 20, 'bold 30px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Score: ' + s.score, cx, cy + 30, '24px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+        drawTextCentered('Press ESC to exit', cx, cy + 90, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        mgDrawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score;
+        document.getElementById('pc-txns').textContent = s.sends;
+        document.getElementById('pc-rate').textContent = '0:00';
+        return;
+      }
+
+      // Timer bar
+      drawTimerBar(s.timeLeft * 1000, 60000, '#f59e0b', 20);
+
+      const target = s.countries[s.currentIndex % s.countries.length];
+
+      // "Send money to:"
+      drawTextCentered('Send money to:', cx, cy - 100, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
+      drawTextCentered(target, cx, cy - 60, 'bold 42px "Segoe UI", system-ui, sans-serif', '#fbbf24');
+
+      // Typed text with highlight
+      const displayTyped = s.typed || '';
+      ctx.font = 'bold 30px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+
+      // Show typed characters color-coded
+      let xOff = cx - ctx.measureText(displayTyped + '_').width / 2;
+      ctx.textAlign = 'left';
+      for (let i = 0; i < displayTyped.length; i++) {
+        const matches = target[i] && displayTyped[i].toLowerCase() === target[i].toLowerCase();
+        ctx.fillStyle = matches ? '#4ade80' : '#ef4444';
+        ctx.fillText(displayTyped[i], xOff, cy + 10);
+        xOff += ctx.measureText(displayTyped[i]).width;
+      }
+      // Cursor blink
+      if (Math.floor(time / 400) % 2 === 0) {
+        ctx.fillStyle = '#fff';
+        ctx.fillText('_', xOff, cy + 10);
+      }
+      ctx.textAlign = 'left';
+
+      drawTextCentered('Type the country name + Enter', cx, cy + 60, '14px "Segoe UI", system-ui, sans-serif', '#888');
+      drawTextCentered('Time: ' + Math.ceil(s.timeLeft) + 's', cx, cy + 90, 'bold 18px "Segoe UI", system-ui, sans-serif', s.timeLeft < 10 ? '#ef4444' : '#fff');
+
+      if (s.flash > 0) {
+        ctx.fillStyle = s.flashColor;
+        ctx.globalAlpha = s.flash * 0.15;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1;
+      }
+
+      mgDrawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      document.getElementById('pc-revenue').textContent = s.score;
+      document.getElementById('pc-txns').textContent = s.sends;
+      document.getElementById('pc-rate').textContent = Math.ceil(s.timeLeft) + 's';
+    },
+    onKey(key, rawKey) {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (key === 'enter') {
+        const target = s.countries[s.currentIndex % s.countries.length];
+        if (s.typed.toLowerCase() === target.toLowerCase()) {
+          s.score += 100 + Math.floor(s.timeLeft) * 2;
+          s.sends++;
+          s.flash = 0.5;
+          s.flashColor = '#22c55e';
+          s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 120, text: '+' + (100 + Math.floor(s.timeLeft) * 2), color: '#4ade80', life: 40, vy: -2 });
+          spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#f59e0b', 12);
+          s.currentIndex++;
+        } else {
+          s.flash = 0.4;
+          s.flashColor = '#ef4444';
+          s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 120, text: 'Wrong!', color: '#ef4444', life: 40, vy: -2 });
+        }
+        s.typed = '';
+      } else if (key === 'backspace') {
+        s.typed = s.typed.slice(0, -1);
+      } else if (rawKey && rawKey.length === 1 && /[a-zA-Z ]/.test(rawKey)) {
+        s.typed += rawKey;
+      }
+    },
+    onSpace() {}
+  },
+
+  // ============================================================
+  // 12. towerDefense - "Tower Defense" (Umbrella Defense) - Lemonade
+  // ============================================================
+  towerDefense: {
+    enter() {
+      mgState = {
+        umbrellaX: canvas.width / 2, umbrellaW: 80,
+        houses: [
+          { x: canvas.width * 0.15, hp: 3 },
+          { x: canvas.width * 0.35, hp: 3 },
+          { x: canvas.width * 0.5, hp: 3 },
+          { x: canvas.width * 0.65, hp: 3 },
+          { x: canvas.width * 0.85, hp: 3 }
+        ],
+        hazards: [], shieldActive: false, shieldTimer: 0, shieldCooldown: 0,
+        score: 0, wave: 1, spawnTimer: 0, spawnInterval: 1200,
+        waveTimer: 0, waveDuration: 15000,
+        lives: 15, // total house HP
+        gameOver: false, floats: [], particles: [],
+        hazardTypes: [
+          { emoji: '\u{1F4A7}', name: 'rain', speed: 2, damage: 1, color: '#60a5fa' },
+          { emoji: '\u{1F9CA}', name: 'hail', speed: 3, damage: 1, color: '#e2e8f0' },
+          { emoji: '\u{1F525}', name: 'fire', speed: 1.5, damage: 2, color: '#f97316' },
+        ]
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.towerDefense;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      if (s.gameOver) {
+        drawTextCentered('GAME OVER', cx, cy - 60, 'bold 48px "Segoe UI", system-ui, sans-serif', '#ef4444');
+        drawTextCentered('Score: ' + s.score, cx, cy, 'bold 30px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Waves Survived: ' + (s.wave - 1), cx, cy + 40, '24px "Segoe UI", system-ui, sans-serif', '#f472b6');
+        drawTextCentered('Press ESC to exit', cx, cy + 100, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        mgDrawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score;
+        document.getElementById('pc-txns').textContent = s.lives;
+        document.getElementById('pc-rate').textContent = s.wave;
+        return;
+      }
+
+      // Move umbrella
+      if (keys['a'] || keys['arrowleft']) s.umbrellaX = Math.max(s.umbrellaW / 2, s.umbrellaX - 5);
+      if (keys['d'] || keys['arrowright']) s.umbrellaX = Math.min(canvas.width - s.umbrellaW / 2, s.umbrellaX + 5);
+
+      // Shield timer
+      if (s.shieldActive) {
+        s.shieldTimer -= dt;
+        if (s.shieldTimer <= 0) s.shieldActive = false;
+      }
+      if (s.shieldCooldown > 0) s.shieldCooldown -= dt;
+
+      // Wave timer
+      s.waveTimer += dt;
+      if (s.waveTimer >= s.waveDuration) {
+        s.wave++;
+        s.waveTimer = 0;
+        s.spawnInterval = Math.max(400, 1200 - s.wave * 80);
+        s.floats.push({ x: cx, y: cy - 100, text: 'WAVE ' + s.wave, color: '#f472b6', life: 60, vy: -1 });
+      }
+
+      // Spawn hazards
+      s.spawnTimer += dt;
+      if (s.spawnTimer >= s.spawnInterval) {
+        s.spawnTimer = 0;
+        const typeIdx = Math.min(Math.floor(Math.random() * Math.min(s.wave, s.hazardTypes.length)), s.hazardTypes.length - 1);
+        const ht = s.hazardTypes[typeIdx];
+        s.hazards.push({
+          x: 30 + Math.random() * (canvas.width - 60),
+          y: -20,
+          speed: ht.speed + s.wave * 0.15,
+          damage: ht.damage,
+          color: ht.color,
+          emoji: ht.emoji
+        });
+      }
+
+      // Ground line
+      const groundY = canvas.height - 80;
+
+      // Update hazards
+      for (let i = s.hazards.length - 1; i >= 0; i--) {
+        const h = s.hazards[i];
+        h.y += h.speed;
+
+        // Check umbrella catch
+        const umbrellaY = groundY - 40;
+        if (h.y >= umbrellaY - 10 && h.y <= umbrellaY + 10 &&
+            h.x >= s.umbrellaX - s.umbrellaW / 2 - 5 && h.x <= s.umbrellaX + s.umbrellaW / 2 + 5) {
+          s.score += 10 * h.damage;
+          s.floats.push({ x: h.x, y: h.y - 20, text: '+' + (10 * h.damage), color: '#4ade80', life: 30, vy: -2 });
+          spawnBurstParticles(s.particles, h.x, h.y, h.color, 6);
+          s.hazards.splice(i, 1);
+          continue;
+        }
+
+        // Check shield block
+        if (s.shieldActive && h.y >= umbrellaY - 30 && h.y <= umbrellaY) {
+          s.score += 15;
+          spawnBurstParticles(s.particles, h.x, h.y, '#fbbf24', 4);
+          s.hazards.splice(i, 1);
+          continue;
+        }
+
+        // Hit ground / houses
+        if (h.y >= groundY) {
+          for (const house of s.houses) {
+            if (Math.abs(h.x - house.x) < 30 && house.hp > 0) {
+              house.hp -= h.damage;
+              s.lives -= h.damage;
+              spawnBurstParticles(s.particles, house.x, groundY, '#ef4444', 8);
+              break;
+            }
+          }
+          s.hazards.splice(i, 1);
+          if (s.lives <= 0) {
+            s.lives = 0;
+            s.gameOver = true;
+            spawnBurstParticles(s.particles, cx, cy, '#ef4444', 40);
+          }
+        }
+      }
+
+      // Draw houses
+      for (const house of s.houses) {
+        const hx = house.x;
+        if (house.hp <= 0) {
+          ctx.fillStyle = 'rgba(100,100,100,0.3)';
+          ctx.fillRect(hx - 18, groundY - 25, 36, 25);
+          continue;
+        }
+        // House body
+        ctx.fillStyle = house.hp >= 3 ? '#f472b6' : house.hp >= 2 ? '#fb923c' : '#ef4444';
+        ctx.fillRect(hx - 18, groundY - 25, 36, 25);
+        // Roof
+        ctx.fillStyle = '#be185d';
+        ctx.beginPath();
+        ctx.moveTo(hx - 22, groundY - 25);
+        ctx.lineTo(hx, groundY - 42);
+        ctx.lineTo(hx + 22, groundY - 25);
+        ctx.fill();
+        // HP bar
+        const hpPct = house.hp / 3;
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(hx - 15, groundY - 50, 30, 4);
+        ctx.fillStyle = hpPct > 0.5 ? '#4ade80' : '#ef4444';
+        ctx.fillRect(hx - 15, groundY - 50, 30 * hpPct, 4);
+      }
+
+      // Draw ground
+      ctx.fillStyle = 'rgba(255,255,255,0.05)';
+      ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+      // Draw umbrella
+      ctx.fillStyle = s.shieldActive ? '#fbbf24' : '#ec4899';
+      ctx.beginPath();
+      ctx.arc(s.umbrellaX, groundY - 40, s.umbrellaW / 2, Math.PI, 0);
+      ctx.fill();
+      // Handle
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(s.umbrellaX, groundY - 40);
+      ctx.lineTo(s.umbrellaX, groundY - 10);
+      ctx.stroke();
+
+      // Shield indicator
+      if (s.shieldActive) {
+        ctx.strokeStyle = 'rgba(251,191,36,0.4)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(s.umbrellaX, groundY - 40, s.umbrellaW / 2 + 10, Math.PI, 0);
+        ctx.stroke();
+      }
+
+      // Draw hazards
+      ctx.font = '20px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      for (const h of s.hazards) {
+        ctx.fillText(h.emoji, h.x, h.y);
+      }
+      ctx.textAlign = 'left';
+
+      // Shield cooldown indicator
+      if (s.shieldCooldown > 0) {
+        drawTextCentered('Shield: ' + Math.ceil(s.shieldCooldown / 1000) + 's', cx, 50, '14px "Segoe UI", system-ui, sans-serif', '#888');
+      } else if (!s.shieldActive) {
+        drawTextCentered('Shield Ready [Space]', cx, 50, '14px "Segoe UI", system-ui, sans-serif', '#4ade80');
+      }
+
+      drawTextCentered('Wave ' + s.wave, cx, 75, 'bold 16px "Segoe UI", system-ui, sans-serif', '#f472b6');
+
+      mgDrawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      document.getElementById('pc-revenue').textContent = s.score;
+      document.getElementById('pc-txns').textContent = s.lives;
+      document.getElementById('pc-rate').textContent = s.wave;
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (key === ' ' && !s.shieldActive && s.shieldCooldown <= 0) {
+        s.shieldActive = true;
+        s.shieldTimer = 2000;
+        s.shieldCooldown = 8000;
+      }
+    },
+    onSpace() {}
+  },
+
+  // ============================================================
+  // 13. houseMaze - "House Maze" (Maze Explorer) - Opendoor
+  // ============================================================
+  houseMaze: {
+    enter() {
+      const mazeW = 15, mazeH = 11;
+      const maze = [];
+      for (let r = 0; r < mazeH; r++) {
+        maze.push(new Array(mazeW).fill(1));
+      }
+      // Generate maze using recursive backtracking
+      function mgCarveMaze(cx, cy) {
+        maze[cy][cx] = 0;
+        const dirs = [[0,-2],[0,2],[-2,0],[2,0]];
+        for (let i = dirs.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+        }
+        for (const [dx, dy] of dirs) {
+          const nx = cx + dx, ny = cy + dy;
+          if (nx > 0 && nx < mazeW - 1 && ny > 0 && ny < mazeH - 1 && maze[ny][nx] === 1) {
+            maze[cy + dy / 2][cx + dx / 2] = 0;
+            mgCarveMaze(nx, ny);
+          }
+        }
+      }
+      mgCarveMaze(1, 1);
+
+      // Place houses (collectibles) on random open cells
+      const openCells = [];
+      for (let r = 1; r < mazeH - 1; r++) {
+        for (let c = 1; c < mazeW - 1; c++) {
+          if (maze[r][c] === 0 && !(r === 1 && c === 1)) openCells.push([c, r]);
+        }
+      }
+      for (let i = openCells.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [openCells[i], openCells[j]] = [openCells[j], openCells[i]];
+      }
+      const houses = [];
+      const houseValues = [50, 75, 100, 125, 150, 200, 250, 300];
+      for (let i = 0; i < Math.min(8, openCells.length); i++) {
+        houses.push({ x: openCells[i][0], y: openCells[i][1], value: houseValues[i], collected: false });
+      }
+
+      // Place exit far from start
+      let exitCell = openCells[openCells.length - 1];
+      // Prefer bottom-right area
+      for (let i = openCells.length - 1; i >= 0; i--) {
+        if (openCells[i][0] >= mazeW - 3 && openCells[i][1] >= mazeH - 3) {
+          exitCell = openCells[i];
+          break;
+        }
+      }
+
+      mgState = {
+        maze, mazeW, mazeH,
+        playerX: 1, playerY: 1,
+        houses, exitX: exitCell[0], exitY: exitCell[1],
+        totalValue: 0, housesCollected: 0,
+        timeLeft: 90, lastTime: performance.now(),
+        gameOver: false, won: false,
+        floats: [], particles: []
+      };
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.houseMaze;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      // Timer
+      const now = performance.now();
+      if (!s.gameOver) {
+        s.timeLeft -= (now - s.lastTime) / 1000;
+        if (s.timeLeft <= 0) {
+          s.timeLeft = 0;
+          s.gameOver = true;
+        }
+      }
+      s.lastTime = now;
+
+      if (s.gameOver) {
+        const title = s.won ? 'ESCAPED!' : "TIME'S UP!";
+        const titleColor = s.won ? '#4ade80' : '#ef4444';
+        drawTextCentered(title, cx, cy - 80, 'bold 48px "Segoe UI", system-ui, sans-serif', titleColor);
+        drawTextCentered('Portfolio: $' + s.totalValue + 'K', cx, cy - 20, 'bold 30px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Houses: ' + s.housesCollected + '/8', cx, cy + 30, '24px "Segoe UI", system-ui, sans-serif', '#a78bfa');
+        drawTextCentered('Press ESC to exit', cx, cy + 90, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        mgDrawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = '$' + s.totalValue + 'K';
+        document.getElementById('pc-txns').textContent = s.housesCollected;
+        document.getElementById('pc-rate').textContent = '0:00';
+        return;
+      }
+
+      // Draw maze
+      const cellSize = Math.min(Math.floor((canvas.width - 60) / s.mazeW), Math.floor((canvas.height - 120) / s.mazeH));
+      const mazePixW = s.mazeW * cellSize;
+      const mazePixH = s.mazeH * cellSize;
+      const ox = cx - mazePixW / 2;
+      const oy = cy - mazePixH / 2 + 15;
+
+      for (let r = 0; r < s.mazeH; r++) {
+        for (let c = 0; c < s.mazeW; c++) {
+          const px = ox + c * cellSize;
+          const py = oy + r * cellSize;
+          if (s.maze[r][c] === 1) {
+            ctx.fillStyle = '#3b1f6e';
+            ctx.fillRect(px, py, cellSize, cellSize);
+          } else {
+            ctx.fillStyle = 'rgba(139,92,246,0.08)';
+            ctx.fillRect(px, py, cellSize, cellSize);
+          }
+        }
+      }
+
+      // Draw exit
+      const exitPulse = 0.5 + Math.sin(time * 0.005) * 0.3;
+      ctx.fillStyle = `rgba(74,222,128,${exitPulse})`;
+      ctx.fillRect(ox + s.exitX * cellSize + 2, oy + s.exitY * cellSize + 2, cellSize - 4, cellSize - 4);
+      ctx.fillStyle = '#4ade80';
+      ctx.font = `bold ${Math.floor(cellSize * 0.5)}px "Segoe UI", system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('EXIT', ox + s.exitX * cellSize + cellSize / 2, oy + s.exitY * cellSize + cellSize / 2 + cellSize * 0.15);
+
+      // Draw houses
+      for (const h of s.houses) {
+        if (h.collected) continue;
+        ctx.fillStyle = 'rgba(251,191,36,0.3)';
+        ctx.fillRect(ox + h.x * cellSize + 3, oy + h.y * cellSize + 3, cellSize - 6, cellSize - 6);
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = `bold ${Math.floor(cellSize * 0.35)}px "Segoe UI", system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('$' + h.value, ox + h.x * cellSize + cellSize / 2, oy + h.y * cellSize + cellSize / 2 + cellSize * 0.1);
+      }
+
+      // Draw player
+      ctx.fillStyle = '#a78bfa';
+      ctx.beginPath();
+      ctx.arc(ox + s.playerX * cellSize + cellSize / 2, oy + s.playerY * cellSize + cellSize / 2, cellSize * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.textAlign = 'left';
+
+      // Timer and info
+      drawTextCentered('Time: ' + Math.ceil(s.timeLeft) + 's', cx, oy - 15, 'bold 18px "Segoe UI", system-ui, sans-serif', s.timeLeft < 15 ? '#ef4444' : '#fff');
+      drawTextCentered('Arrow keys to move | Collect houses, find EXIT', cx, oy + mazePixH + 25, '13px "Segoe UI", system-ui, sans-serif', '#888');
+
+      mgDrawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+
+      document.getElementById('pc-revenue').textContent = '$' + s.totalValue + 'K';
+      document.getElementById('pc-txns').textContent = s.housesCollected;
+      document.getElementById('pc-rate').textContent = Math.ceil(s.timeLeft) + 's';
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver) return;
+      let dx = 0, dy = 0;
+      if (key === 'arrowleft' || key === 'a') dx = -1;
+      if (key === 'arrowright' || key === 'd') dx = 1;
+      if (key === 'arrowup' || key === 'w') dy = -1;
+      if (key === 'arrowdown' || key === 's') dy = 1;
+      if (dx === 0 && dy === 0) return;
+      const nx = s.playerX + dx;
+      const ny = s.playerY + dy;
+      if (nx < 0 || nx >= s.mazeW || ny < 0 || ny >= s.mazeH) return;
+      if (s.maze[ny][nx] === 1) return;
+      s.playerX = nx;
+      s.playerY = ny;
+
+      // Check house collection
+      for (const h of s.houses) {
+        if (!h.collected && h.x === nx && h.y === ny) {
+          h.collected = true;
+          s.totalValue += h.value;
+          s.housesCollected++;
+          const cellSize = 30;
+          s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 100, text: '+$' + h.value + 'K', color: '#fbbf24', life: 40, vy: -2 });
+          spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#fbbf24', 10);
+        }
+      }
+
+      // Check exit
+      if (nx === s.exitX && ny === s.exitY) {
+        s.gameOver = true;
+        s.won = true;
+        s.score = s.totalValue + Math.floor(s.timeLeft) * 10;
+        spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#4ade80', 40);
+        spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#a78bfa', 30);
+      }
+    },
+    onSpace() {}
   }
 };
+
+// --- Tetris helper functions (prefixed mg to avoid collisions) ---
+function mgTryMove(s, dx, dy) {
+  const p = s.current;
+  for (let r = 0; r < p.shape.length; r++) {
+    for (let c = 0; c < p.shape[r].length; c++) {
+      if (p.shape[r][c]) {
+        const nx = p.x + c + dx;
+        const ny = p.y + r + dy;
+        if (nx < 0 || nx >= s.cols || ny >= s.rows) return false;
+        if (ny >= 0 && s.grid[ny][nx]) return false;
+      }
+    }
+  }
+  p.x += dx;
+  p.y += dy;
+  return true;
+}
+
+function mgRotatePiece(s) {
+  const p = s.current;
+  const newShape = [];
+  const rows = p.shape.length;
+  const cols = p.shape[0].length;
+  for (let c = 0; c < cols; c++) {
+    const newRow = [];
+    for (let r = rows - 1; r >= 0; r--) {
+      newRow.push(p.shape[r][c]);
+    }
+    newShape.push(newRow);
+  }
+  const oldShape = p.shape;
+  p.shape = newShape;
+  // Check if valid position
+  let valid = true;
+  for (let r = 0; r < p.shape.length; r++) {
+    for (let c = 0; c < p.shape[r].length; c++) {
+      if (p.shape[r][c]) {
+        const nx = p.x + c;
+        const ny = p.y + r;
+        if (nx < 0 || nx >= s.cols || ny >= s.rows) { valid = false; break; }
+        if (ny >= 0 && s.grid[ny][nx]) { valid = false; break; }
+      }
+    }
+    if (!valid) break;
+  }
+  if (!valid) p.shape = oldShape;
+}
+
+function mgLockPiece(s) {
+  const p = s.current;
+  for (let r = 0; r < p.shape.length; r++) {
+    for (let c = 0; c < p.shape[r].length; c++) {
+      if (p.shape[r][c]) {
+        const gy = p.y + r;
+        const gx = p.x + c;
+        if (gy < 0) { s.gameOver = true; return; }
+        s.grid[gy][gx] = p.color;
+      }
+    }
+  }
+  // Check completed rows
+  let cleared = 0;
+  for (let r = s.rows - 1; r >= 0; r--) {
+    if (s.grid[r].every(cell => cell !== 0)) {
+      s.grid.splice(r, 1);
+      s.grid.unshift(new Array(s.cols).fill(0));
+      cleared++;
+      r++; // recheck this row
+    }
+  }
+  if (cleared > 0) {
+    const points = [0, 100, 300, 500, 800];
+    s.score += (points[cleared] || 800) * s.level;
+    s.lines += cleared;
+    s.level = Math.floor(s.lines / 10) + 1;
+    s.dropInterval = Math.max(100, 500 - (s.level - 1) * 40);
+    s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 100, text: '+' + ((points[cleared] || 800) * s.level), color: '#4ade80', life: 40, vy: -2 });
+    spawnBurstParticles(s.particles, canvas.width / 2, canvas.height / 2, '#22c55e', cleared * 8);
+  }
+  s.current = s.next;
+  s.next = s.mgRandomPiece();
+  s.dropTimer = 0;
+}
 
 // --- Dispatcher Functions ---
 function enterMiniGame(configKey) {
@@ -6310,6 +7468,19 @@ function enterMiniGame(configKey) {
 function exitMiniGame() {
   const meta = miniGameMeta[activeMiniGameKey];
   const hub = meta?.hubRef?.();
+
+  // Track completed mini-games for All Games Champion
+  if (activeMiniGameKey) {
+    completedMiniGames.add(activeMiniGameKey);
+    if (!easterEggsFound.has('all_champion') && completedMiniGames.size >= 13) {
+      easterEggsFound.add('all_champion');
+      showEasterToast('ALL GAMES CHAMPION! You played every single mini-game!');
+    }
+  }
+
+  // Cycle world theme
+  worldThemeIndex = (worldThemeIndex + 1) % worldThemes.length;
+
   gameState = 'main';
   activeMiniGameKey = null;
   mgState = {};
