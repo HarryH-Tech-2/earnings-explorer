@@ -391,12 +391,17 @@ window.addEventListener('keydown', e => {
     const npcDialogue = document.getElementById('npc-dialogue');
     if (centerNpcTalkable) {
       centerNpc.dialogueActive = true;
+      // Pick a random unseen dialogue
+      if (centerNpc.dialoguesSeen.length >= centerNpc.dialogues.length) centerNpc.dialoguesSeen = [];
+      const unseen = centerNpc.dialogues.filter((_, i) => !centerNpc.dialoguesSeen.includes(i));
+      const pick = Math.floor(Math.random() * unseen.length);
+      const realIndex = centerNpc.dialogues.indexOf(unseen[pick]);
+      centerNpc.dialoguesSeen.push(realIndex);
       npcDialogue.querySelector('.npc-name').textContent = centerNpc.name;
       npcDialogue.querySelector('.npc-name').style.color = '#fbbf24';
-      npcDialogue.querySelector('.npc-quote').textContent = `"${centerNpc.dialogues[centerNpc.dialogueIndex]}"`;
+      npcDialogue.querySelector('.npc-quote').textContent = `"${centerNpc.dialogues[realIndex]}"`;
       npcDialogue.querySelector('.npc-label').textContent = 'Your Guide';
       npcDialogue.classList.add('visible');
-      centerNpc.dialogueIndex = (centerNpc.dialogueIndex + 1) % centerNpc.dialogues.length;
     } else if (tourGuide.talkable) {
       tourGuide.dialogueActive = true;
       npcDialogue.querySelector('.npc-name').textContent = tourGuide.name;
@@ -460,7 +465,9 @@ window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
 // ===== MOBILE TOUCH CONTROLS =====
 (function() {
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // Only show touch controls on actual mobile/tablet devices (coarse pointer = touch primary input)
+  // This avoids showing on Windows laptops with touchscreens where mouse is primary
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
   if (!isTouchDevice) return;
   document.body.classList.add('touch-device');
 
@@ -1289,6 +1296,64 @@ const companies = {
         highlight: 'Expanding beyond personal loans into auto, POS/BNPL, and real estate verticals.'
       }
     ]
+  },
+  root: {
+    name: 'Root Inc',
+    ticker: 'ROOT',
+    color: '#e91e63',
+    colorLight: '#f06292',
+    colorDark: '#ad1457',
+    colorBg: 'rgba(233,30,99,0.12)',
+    earningsUrl: 'https://ir.joinroot.com/',
+    x: 600, y: 3400,
+    isPortal: true, miniGameKey: 'riskRater', portalLabel: 'Risk Rater',
+    summary: 'Root Inc delivered breakthrough Q4 2025 results with gross premiums written of $345M (+42% YoY). The AI-powered auto insurer hit profitability milestones with a 73% gross loss ratio, a 17-point improvement YoY. Policies in force reached 420K (+38% YoY) as the telematics-first model scaled. Full-year gross premiums crossed $1.2B. Adjusted EBITDA turned positive at $18M for Q4, and the company ended the year with $650M in cash. Root\'s mobile-first platform and behavioral driving data continue to disrupt traditional auto insurance underwriting.',
+    dataPoints: [
+      {
+        title: 'Premiums & Growth',
+        offset: { x: -180, y: -40 },
+        metrics: [
+          { label: 'Gross Premiums Written', value: '$345M', change: '+42% YoY', positive: true },
+          { label: 'Net Premiums Earned', value: '$285M', change: '+38% YoY', positive: true },
+          { label: 'Policies in Force', value: '420K', change: '+38% YoY', positive: true },
+          { label: 'FY Gross Premiums', value: '$1.2B', change: '+35% YoY', positive: true },
+        ],
+        highlight: 'Root crossed $1.2B in full-year gross premiums as its telematics model drives rapid policy growth.'
+      },
+      {
+        title: 'Loss Ratio & Underwriting',
+        offset: { x: 180, y: -40 },
+        metrics: [
+          { label: 'Gross Loss Ratio', value: '73%', change: '-17pts YoY', positive: true },
+          { label: 'Net Loss Ratio', value: '68%', change: '-15pts YoY', positive: true },
+          { label: 'Expense Ratio', value: '24%', change: '-4pts YoY', positive: true },
+          { label: 'Combined Ratio', value: '92%', change: 'Below 100%', positive: true },
+        ],
+        highlight: 'Combined ratio dropped below 100% — Root is now writing profitable insurance at scale.'
+      },
+      {
+        title: 'Technology & Data',
+        offset: { x: -180, y: 100 },
+        metrics: [
+          { label: 'Telematics Trips', value: '18B+', change: 'Lifetime data', positive: true },
+          { label: 'Pricing Variables', value: '4,000+', change: 'AI model inputs', positive: true },
+          { label: 'Quote-to-Bind Rate', value: '12%', change: '+3pts YoY', positive: true },
+          { label: 'Mobile App Rating', value: '4.8★', change: 'App Store', positive: true },
+        ],
+        highlight: 'Root\'s 18B+ telematics trips fuel AI models that price risk better than traditional insurers.'
+      },
+      {
+        title: 'Profitability & Cash',
+        offset: { x: 180, y: 100 },
+        metrics: [
+          { label: 'Adj. EBITDA', value: '$18M', change: 'Now positive', positive: true },
+          { label: 'Cash & Investments', value: '$650M', change: 'Strong runway', positive: true },
+          { label: 'Customer Acq. Cost', value: '$285', change: '-22% YoY', positive: true },
+          { label: 'LTV/CAC Ratio', value: '3.8x', change: '+0.9x YoY', positive: true },
+        ],
+        highlight: 'Root turned EBITDA positive while reducing customer acquisition cost by 22%.'
+      }
+    ]
   }
 };
 
@@ -1304,12 +1369,59 @@ const shift4Hub = {
   colorLight: '#33ffcc',
   colorDark: '#007755',
   colorBg: 'rgba(0,212,170,0.12)',
+  earningsUrl: 'https://investors.shift4.com/',
   x: WORLD_W * 0.2,
   y: WORLD_H * 0.22,
   isPortal: true,
   miniGameKey: 'transactionBlitz',
   portalLabel: 'Transaction Blitz',
-  summary: 'Shift4 delivered record Q4 2025 results with $2.6B+ in end-to-end payment volume processed. The company powers payments for restaurants, hotels, stadiums, and more.'
+  summary: 'Shift4 delivered record Q4 2025 with end-to-end payment volume of $41.2B (+53% YoY). Revenue reached $934M for FY 2025 (+38%). Gross revenue less network fees hit $118M in Q4 (+40%). The company processes payments for 200,000+ restaurants, hotels, stadiums, and casinos. Adj. EBITDA of $62M in Q4 represents a 24% margin. International expansion is accelerating with acquisitions of Finaro and Vectron driving European growth. Q1 2026 guidance calls for continued 30%+ volume growth.',
+  dataPoints: [
+    {
+      title: 'Volume & Revenue',
+      offset: { x: -180, y: -40 },
+      metrics: [
+        { label: 'Q4 E2E Volume', value: '$41.2B', change: '+53% YoY', positive: true },
+        { label: 'FY 2025 E2E Volume', value: '$148B', change: '+50%', positive: true },
+        { label: 'FY 2025 Revenue', value: '$934M', change: '+38%', positive: true },
+        { label: 'Q4 Gross Rev Less NF', value: '$118M', change: '+40%', positive: true },
+      ],
+      highlight: 'End-to-end volume surged 53% in Q4 to $41.2B, reflecting strong merchant adoption.'
+    },
+    {
+      title: 'Profitability',
+      offset: { x: 180, y: -40 },
+      metrics: [
+        { label: 'Q4 Adj. EBITDA', value: '$62M', change: '24% margin', positive: true },
+        { label: 'FY Adj. EBITDA', value: '$215M', change: '+35%', positive: true },
+        { label: 'Q4 Adj. Net Income', value: '$38M', change: '+45%', positive: true },
+        { label: 'Free Cash Flow (FY)', value: '$165M', change: '+40%', positive: true },
+      ],
+      highlight: 'Adj. EBITDA margins expanding as Shift4 gains operating leverage at scale.'
+    },
+    {
+      title: 'Merchants & Verticals',
+      offset: { x: -180, y: 100 },
+      metrics: [
+        { label: 'Total Merchants', value: '200,000+', change: '+25% YoY', positive: true },
+        { label: 'Restaurants', value: '100K+', change: 'Largest vertical', positive: true },
+        { label: 'Hotels & Resorts', value: '25K+', change: '+35% YoY', positive: true },
+        { label: 'Stadiums & Venues', value: '3,000+', change: '+50% YoY', positive: true },
+      ],
+      highlight: '200,000+ merchants across restaurants, hotels, stadiums, and gaming venues.'
+    },
+    {
+      title: 'International & Growth',
+      offset: { x: 180, y: 100 },
+      metrics: [
+        { label: 'International Volume', value: '$8.5B', change: '+80% YoY', positive: true },
+        { label: 'European Merchants', value: '30K+', change: 'Via Finaro/Vectron', positive: true },
+        { label: 'SpacX/SkyTab Installs', value: '65K+', change: '+40%', positive: true },
+        { label: 'Q1 2026 Vol. Guidance', value: '$43B+', change: '+30%+ YoY', positive: true },
+      ],
+      highlight: 'International is the fastest-growing segment. European expansion via acquisitions driving 80% volume growth.'
+    }
+  ]
 };
 
 // Collect all portal hubs (companies with isPortal + shift4)
@@ -1507,19 +1619,42 @@ let celebrationTriggered = false;
 // ===== CENTER NPC: HarryH1993 =====
 const centerNpc = {
   name: 'HarryH1993',
-  x: WORLD_W / 2 + 60,
-  y: WORLD_H / 2 + 40,
-  dialogueIndex: 0,
-  dialogueActive: false,
+  homeX: WORLD_W / 2, homeY: WORLD_H / 2,
+  x: WORLD_W / 2 + 60, y: WORLD_H / 2 + 40,
+  patrolRadius: 120,
+  walkAngle: 0, walkSpeed: 0.4, walkTimer: 0, walkPauseUntil: 0,
+  facingRight: true,
+  dialogueIndex: 0, dialogueActive: false,
+  dialoguesSeen: [],
   dialogues: [
-    "Hey! I'm HarryH1993. Welcome to Earnings Explorer!",
-    "My investing philosophy? Simple: think long-term.",
-    "Volatility is noise. I focus on the business fundamentals.",
-    "If you believe in the company, short-term dips are buying opportunities.",
-    "Do your own research. Understand what you own. Be patient."
+    "Hey there! Welcome to Earnings Explorer! I'm Harry — glad you stopped by!",
+    "My dog Biscuit and I walk these parts every day. She loves the company hubs!",
+    "Investing tip: the best time to start was yesterday. The second best? Right now.",
+    "I look at quarterly earnings like a health checkup — trends matter more than one reading.",
+    "Every company here has a story. Walk up to any hub and press E to dig in!",
+    "Biscuit gets excited near the fintech hubs. She's got good taste in stocks!",
+    "When everyone's fearful, that's when I get curious. Contrarian thinking pays off.",
+    "Revenue growth is great, but I always check if the company is actually making money.",
+    "I built this place so people could explore earnings in a fun way. Hope you enjoy it!",
+    "Pro tip: the mini-games actually teach you about each company. Give them a try!",
+    "Diversification doesn't mean owning everything. It means owning the RIGHT things.",
+    "I've been investing since I was 18. Patience has been my best strategy.",
+    "Biscuit and I have visited every hub here. She fell asleep during the Berkshire one though.",
+    "Don't just look at the stock price. Look at the business behind it.",
+    "There are some secrets hidden around the map. Keep your eyes open!",
+    "My portfolio is concentrated in high-conviction names. Not for everyone, but it works for me.",
+    "The beauty of compounding is that time does the heavy lifting. Let it work!",
+    "Each hub has earnings data orbs floating nearby. Walk into them to see the financials!",
+    "I read every earnings call transcript for the companies I own. Knowledge is edge.",
+    "Biscuit says hi! She thinks you should check out the Nu Holdings hub. Great numbers!",
+    "Remember: past performance doesn't guarantee future results. But understanding the business helps.",
+    "Some of my best investments were boring companies doing boring things really well.",
+    "If you can explain why you own a stock in two sentences, you probably know it well enough.",
+    "Walk around and explore! There's a lot to discover in every corner of this world.",
+    "Earnings season is like Christmas for investors. All these fresh numbers to dig into!"
   ]
 };
-const npcDog = { offsetX: -25, offsetY: 12, tailPhase: 0 };
+const npcDog = { offsetX: -25, offsetY: 12, tailPhase: 0, walkBob: 0 };
 let centerNpcTalkable = false;
 
 // ===== TOUR GUIDE NPC =====
@@ -2714,9 +2849,13 @@ function drawCenterHub(time) {
   ctx.textAlign = 'left';
 
   // === HarryH1993 NPC ===
-  const npcX = sx, npcY = sy;
+  const npcX = centerNpc.x - camera.x, npcY = centerNpc.y - camera.y;
+  if (npcX < -100 || npcX > canvas.width+100 || npcY < -100 || npcY > canvas.height+100) { ctx.textAlign='left'; return; }
   const breathe = Math.sin(time * 0.003) * 1.5;
   const sc = 1.3; // scale
+  const isWalking = performance.now() > centerNpc.walkPauseUntil && !centerNpc.dialogueActive;
+  const walkCycle = isWalking ? Math.sin(time * 0.012) * 4 : 0;
+  const faceDir = centerNpc.facingRight ? 1 : -1;
 
   // Golden aura
   const auraAlpha = 0.12 + Math.sin(time * 0.002) * 0.06;
@@ -2734,15 +2873,15 @@ function drawCenterHub(time) {
   ctx.ellipse(npcX, npcY + 18 * sc, 12 * sc, 4 * sc, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Legs (jeans)
+  // Legs (jeans) with walk animation
   ctx.fillStyle = '#1e3a5f';
-  ctx.fillRect(npcX - 5 * sc, npcY + 2 * sc + breathe, 4 * sc, 16 * sc);
-  ctx.fillRect(npcX + 1 * sc, npcY + 2 * sc + breathe, 4 * sc, 16 * sc);
+  ctx.fillRect(npcX - 5 * sc + walkCycle, npcY + 2 * sc + breathe, 4 * sc, 16 * sc);
+  ctx.fillRect(npcX + 1 * sc - walkCycle, npcY + 2 * sc + breathe, 4 * sc, 16 * sc);
 
   // Shoes
   ctx.fillStyle = '#3d2010';
-  ctx.fillRect(npcX - 6 * sc, npcY + 17 * sc + breathe, 6 * sc, 3 * sc);
-  ctx.fillRect(npcX, npcY + 17 * sc + breathe, 6 * sc, 3 * sc);
+  ctx.fillRect(npcX - 6 * sc + walkCycle, npcY + 17 * sc + breathe, 6 * sc, 3 * sc);
+  ctx.fillRect(npcX - walkCycle, npcY + 17 * sc + breathe, 6 * sc, 3 * sc);
 
   // Body (blue polo)
   ctx.fillStyle = '#2563eb';
@@ -2793,17 +2932,14 @@ function drawCenterHub(time) {
   ctx.arc(npcX, npcY - 22 * sc + breathe, 3 * sc, 0.1, Math.PI - 0.1);
   ctx.stroke();
 
-  // Welcome text
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
+  // Name tag above head
   ctx.textAlign = 'center';
-  ctx.fillText('Welcome to Earnings Explorer!', npcX, npcY - 48 * sc);
   ctx.fillStyle = '#fbbf24';
-  ctx.font = 'bold 11px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText('HarryH1993', npcX, npcY - 38 * sc);
-  ctx.fillStyle = '#888';
+  ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText('HarryH1993', npcX, npcY - 42 * sc);
+  ctx.fillStyle = '#aaa';
   ctx.font = '10px "Segoe UI", system-ui, sans-serif';
-  ctx.fillText('Q4 & FY 2025', npcX, npcY + 25 * sc);
+  ctx.fillText('& Biscuit \uD83D\uDC36', npcX, npcY - 32 * sc);
 
   // Talk prompt when nearby
   if (centerNpcTalkable) {
@@ -2813,10 +2949,11 @@ function drawCenterHub(time) {
     ctx.fillText('Press T to talk', npcX, npcY + 32 * sc);
   }
 
-  // === Dog companion ===
-  npcDog.tailPhase = time * 0.008;
-  const dogX = npcX + npcDog.offsetX;
-  const dogY = npcY + npcDog.offsetY + Math.sin(time * 0.004) * 1.5;
+  // === Dog companion (follows Harry) ===
+  npcDog.tailPhase = isWalking ? time * 0.016 : time * 0.008;
+  const dogOffsetX = centerNpc.facingRight ? -30 : 30;
+  const dogX = npcX + dogOffsetX;
+  const dogY = npcY + 12 + (isWalking ? npcDog.walkBob : Math.sin(time * 0.004) * 1.5);
   const ds = 0.9; // dog scale
   // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -3333,6 +3470,27 @@ function gameLoop(time) {
       activePanel = null;
       hideDataPanel();
     }
+  }
+
+  // Center NPC walking behavior
+  if (!centerNpc.dialogueActive) {
+    const now = performance.now();
+    if (now > centerNpc.walkPauseUntil) {
+      centerNpc.walkTimer += 0.02;
+      centerNpc.walkAngle += 0.008 + Math.sin(centerNpc.walkTimer * 0.3) * 0.003;
+      const targetX = centerNpc.homeX + Math.cos(centerNpc.walkAngle) * centerNpc.patrolRadius;
+      const targetY = centerNpc.homeY + Math.sin(centerNpc.walkAngle * 0.7) * centerNpc.patrolRadius * 0.6;
+      const dx = targetX - centerNpc.x, dy = targetY - centerNpc.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 1) {
+        centerNpc.x += (dx / dist) * centerNpc.walkSpeed;
+        centerNpc.y += (dy / dist) * centerNpc.walkSpeed;
+        centerNpc.facingRight = dx > 0;
+      }
+      // Occasionally pause
+      if (Math.random() < 0.002) centerNpc.walkPauseUntil = now + 2000 + Math.random() * 3000;
+    }
+    npcDog.walkBob = Math.sin(performance.now() * 0.006) * 2;
   }
 
   // Center NPC proximity detection
@@ -4800,6 +4958,13 @@ const miniGameMeta = {
     labels: ['Value', 'Houses', 'Time'],
     instruction: 'Arrow keys to navigate. Collect houses, find the exit before time runs out!',
     hubRef: () => companies.opendoor
+  },
+  riskRater: {
+    name: 'Risk Rater',
+    bg1: '#e91e63', bg2: '#ad1457',
+    labels: ['Score', 'Streak', 'Drivers'],
+    instruction: 'Rate each driver! Press 1 for Low Risk, 2 for Medium, 3 for High. Use telematics data!',
+    hubRef: () => companies.root
   }
 };
 
@@ -5604,12 +5769,12 @@ const miniGameHandlers = {
       mgState = {
         cities,
         cursorX: canvas.width / 2, cursorY: canvas.height / 2,
-        cursorSpeed: 5,
+        cursorSpeed: 7,
         transfers: [],
         spawnTimer: 0, spawnInterval: 2000,
         intercepted: null, options: [], optionIndex: 0,
         score: 0, speed: 1, totalIntercepted: 0,
-        lives: 5, floats: [], particles: [],
+        lives: 8, floats: [], particles: [],
         gameOver: false
       };
     },
@@ -5622,7 +5787,7 @@ const miniGameHandlers = {
       const tx = to.x * canvas.width, ty = to.y * canvas.height;
       s.transfers.push({
         from, to, x: fx, y: fy, tx, ty,
-        progress: 0, speed: 0.003 + s.speed * 0.001,
+        progress: 0, speed: 0.002 + s.speed * 0.0008,
         amount: [100, 250, 500, 1000, 2500][Math.floor(Math.random() * 5)],
         interceptable: true
       });
@@ -5662,7 +5827,7 @@ const miniGameHandlers = {
       if (s.spawnTimer > s.spawnInterval && !s.intercepted) {
         s.spawnTimer = 0;
         this._spawnTransfer();
-        s.spawnInterval = Math.max(600, 2000 - s.totalIntercepted * 40);
+        s.spawnInterval = Math.max(800, 2000 - s.totalIntercepted * 25);
       }
 
       // Update transfers
@@ -5793,7 +5958,7 @@ const miniGameHandlers = {
         const chosen = s.options[s.optionIndex];
         if (chosen === s.intercepted.to.name) {
           s.totalIntercepted++;
-          s.speed = Math.min(10, 1 + s.totalIntercepted * 0.2);
+          s.speed = Math.min(8, 1 + s.totalIntercepted * 0.12);
           const pts = 100 + s.intercepted.amount / 5;
           s.score += Math.floor(pts);
           s.floats.push({ x: canvas.width / 2, y: canvas.height / 2 - 60, text: '+' + Math.floor(pts), color: '#4ade80', life: 45, vy: -2 });
@@ -5809,7 +5974,7 @@ const miniGameHandlers = {
         return;
       }
       // Try to intercept nearest transfer
-      let nearest = null, nearestDist = 40;
+      let nearest = null, nearestDist = 55;
       for (const t of s.transfers) {
         const d = Math.hypot(s.cursorX - t.x, s.cursorY - t.y);
         if (d < nearestDist) { nearest = t; nearestDist = d; }
@@ -8109,6 +8274,214 @@ const miniGameHandlers = {
       }
     },
     onSpace() {}
+  },
+
+  // ============================================================
+  // ROOT - "Risk Rater" (Driver risk assessment game)
+  // ============================================================
+  riskRater: {
+    _genDriver() {
+      const names = ['Alex M.','Jordan P.','Sam K.','Casey R.','Morgan T.','Riley W.','Quinn D.','Avery L.','Blake S.','Drew F.','Jamie H.','Taylor N.'];
+      const ages = [17,19,22,25,28,32,38,45,52,60,67,72];
+      const cars = ['2024 Tesla Model 3','2015 Honda Civic','2022 BMW M3','2019 Toyota Camry','2023 Ford F-150','2020 Subaru Outback','2018 Dodge Charger','2021 Hyundai Sonata','2016 Jeep Wrangler','2023 Volvo XC90'];
+      const commutes = [3,8,15,22,35,45,55,70];
+      const age = ages[Math.floor(Math.random()*ages.length)];
+      const mileage = commutes[Math.floor(Math.random()*commutes.length)];
+      const braking = Math.floor(Math.random()*10);
+      const speeding = Math.floor(Math.random()*10);
+      const phoneUse = Math.floor(Math.random()*10);
+      const nightDriving = Math.floor(Math.random()*100);
+      const accidents = Math.floor(Math.random()*4);
+      // Score calculation: lower = less risky
+      let riskScore = 0;
+      if (age < 20) riskScore += 3; else if (age < 25) riskScore += 2; else if (age > 70) riskScore += 1;
+      riskScore += speeding * 0.4 + phoneUse * 0.5 + braking * 0.2;
+      riskScore += accidents * 2;
+      if (mileage > 40) riskScore += 1.5; else if (mileage > 25) riskScore += 0.5;
+      if (nightDriving > 60) riskScore += 1;
+      let correctAnswer;
+      if (riskScore < 3) correctAnswer = 0; // low
+      else if (riskScore < 6) correctAnswer = 1; // medium
+      else correctAnswer = 2; // high
+      return {
+        name: names[Math.floor(Math.random()*names.length)],
+        age, car: cars[Math.floor(Math.random()*cars.length)],
+        mileage, braking, speeding, phoneUse, nightDriving, accidents,
+        correctAnswer, riskScore
+      };
+    },
+    enter() {
+      mgState = {
+        driver: null,
+        score: 0, streak: 0, maxStreak: 0,
+        driversRated: 0, totalDrivers: 20,
+        answered: false, answerCorrect: false, selectedAnswer: -1,
+        answerTime: 0, gameOver: false,
+        floats: [], particles: [],
+        flashAlpha: 0, flashColor: '#00ff00'
+      };
+      mgState.driver = this._genDriver();
+    },
+    loop(time, dt) {
+      const s = mgState;
+      const meta = miniGameMeta.riskRater;
+      drawMiniGameBg(meta.bg1, meta.bg2);
+      s.floats = updateFloatingTexts(s.floats);
+      s.particles = updateParticles(s.particles);
+      const cx = canvas.width / 2, cy = canvas.height / 2;
+
+      if (s.flashAlpha > 0) {
+        ctx.fillStyle = s.flashColor === '#00ff00' ? `rgba(0,255,0,${s.flashAlpha})` : `rgba(255,0,0,${s.flashAlpha})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        s.flashAlpha -= 0.03;
+      }
+
+      if (s.gameOver) {
+        drawTextCentered('SHIFT COMPLETE!', cx, cy - 80, 'bold 44px "Segoe UI", system-ui, sans-serif', '#e91e63');
+        drawTextCentered('Score: ' + s.score, cx, cy - 20, 'bold 30px "Segoe UI", system-ui, sans-serif', '#fff');
+        drawTextCentered('Best Streak: ' + s.maxStreak, cx, cy + 30, '22px "Segoe UI", system-ui, sans-serif', '#f06292');
+        drawTextCentered('Drivers Rated: ' + s.driversRated + '/' + s.totalDrivers, cx, cy + 70, '20px "Segoe UI", system-ui, sans-serif', '#aaa');
+        drawTextCentered('Press ESC to exit', cx, cy + 120, '18px "Segoe UI", system-ui, sans-serif', '#888');
+        mgDrawParticles(s.particles);
+        drawFloatingTexts(s.floats);
+        document.getElementById('pc-revenue').textContent = s.score;
+        document.getElementById('pc-txns').textContent = s.streak;
+        document.getElementById('pc-rate').textContent = s.driversRated + '/' + s.totalDrivers;
+        return;
+      }
+
+      const d = s.driver;
+      // Driver profile card
+      const cardW = 520, cardH = 280;
+      const cardX = cx - cardW / 2, cardY = cy - 160;
+      ctx.fillStyle = 'rgba(20,10,30,0.85)';
+      ctx.strokeStyle = '#e91e63';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(cardX, cardY, cardW, cardH, 12);
+      ctx.fill(); ctx.stroke();
+
+      // Driver name & car
+      drawTextCentered('DRIVER PROFILE', cx, cardY + 28, 'bold 16px "Segoe UI", system-ui, sans-serif', '#e91e63');
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 18px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(d.name + '  |  Age: ' + d.age, cardX + 20, cardY + 60);
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#ccc';
+      ctx.fillText('Vehicle: ' + d.car, cardX + 20, cardY + 84);
+      ctx.fillText('Daily Commute: ' + d.mileage + ' miles', cardX + 20, cardY + 106);
+
+      // Telematics data bars
+      const barY = cardY + 130;
+      const metrics = [
+        { label: 'Hard Braking', val: d.braking, color: '#f59e0b' },
+        { label: 'Speeding Events', val: d.speeding, color: '#ef4444' },
+        { label: 'Phone Usage', val: d.phoneUse, color: '#8b5cf6' },
+      ];
+      metrics.forEach((m, i) => {
+        const by = barY + i * 30;
+        ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+        ctx.fillStyle = '#aaa';
+        ctx.textAlign = 'left';
+        ctx.fillText(m.label, cardX + 20, by + 12);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(cardX + 150, by, 200, 16);
+        ctx.fillStyle = m.color;
+        ctx.fillRect(cardX + 150, by, m.val / 10 * 200, 16);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+        ctx.fillText(m.val + '/10', cardX + 360, by + 12);
+      });
+
+      // Extra stats
+      ctx.font = '13px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('Night Driving: ' + d.nightDriving + '%', cardX + 20, barY + 110);
+      ctx.fillText('Prior Accidents: ' + d.accidents, cardX + 250, barY + 110);
+
+      ctx.textAlign = 'center';
+
+      // Answer options
+      if (!s.answered) {
+        const labels = ['1: Low Risk', '2: Medium Risk', '3: High Risk'];
+        const colors = ['#4ade80', '#fbbf24', '#ef4444'];
+        labels.forEach((lbl, i) => {
+          const bx = cx - 180 + i * 180;
+          const by = cardY + cardH + 20;
+          ctx.fillStyle = 'rgba(255,255,255,0.08)';
+          ctx.strokeStyle = colors[i];
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.roundRect(bx - 70, by, 140, 44, 8); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = colors[i];
+          ctx.font = 'bold 16px "Segoe UI", system-ui, sans-serif';
+          ctx.fillText(lbl, bx, by + 28);
+        });
+      } else {
+        const labels = ['Low Risk', 'Medium Risk', 'High Risk'];
+        const colors = ['#4ade80', '#fbbf24', '#ef4444'];
+        labels.forEach((lbl, i) => {
+          const bx = cx - 180 + i * 180;
+          const by = cardY + cardH + 20;
+          const isCorrect = i === d.correctAnswer;
+          const isSelected = i === s.selectedAnswer;
+          ctx.fillStyle = isCorrect ? 'rgba(74,222,128,0.2)' : isSelected ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.04)';
+          ctx.strokeStyle = isCorrect ? '#4ade80' : isSelected && !isCorrect ? '#ef4444' : 'rgba(255,255,255,0.1)';
+          ctx.lineWidth = isCorrect || isSelected ? 3 : 1;
+          ctx.beginPath(); ctx.roundRect(bx - 70, by, 140, 44, 8); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = isCorrect ? '#4ade80' : '#888';
+          ctx.font = 'bold 16px "Segoe UI", system-ui, sans-serif';
+          ctx.fillText(lbl, bx, by + 28);
+        });
+        const resultText = s.answerCorrect ? 'CORRECT!' : 'Wrong — ' + labels[d.correctAnswer];
+        const resultColor = s.answerCorrect ? '#4ade80' : '#ef4444';
+        drawTextCentered(resultText, cx, cardY + cardH + 86, 'bold 22px "Segoe UI", system-ui, sans-serif', resultColor);
+        drawTextCentered('Press Space for next driver', cx, cardY + cardH + 112, '14px "Segoe UI", system-ui, sans-serif', '#888');
+      }
+
+      mgDrawParticles(s.particles);
+      drawFloatingTexts(s.floats);
+      document.getElementById('pc-revenue').textContent = s.score;
+      document.getElementById('pc-txns').textContent = s.streak;
+      document.getElementById('pc-rate').textContent = s.driversRated + '/' + s.totalDrivers;
+    },
+    onKey(key) {
+      const s = mgState;
+      if (s.gameOver || s.answered) return;
+      let pick = -1;
+      if (key === '1') pick = 0;
+      if (key === '2') pick = 1;
+      if (key === '3') pick = 2;
+      if (pick === -1) return;
+      s.answered = true;
+      s.selectedAnswer = pick;
+      s.answerCorrect = pick === s.driver.correctAnswer;
+      if (s.answerCorrect) {
+        s.score += 100 + s.streak * 25;
+        s.streak++;
+        if (s.streak > s.maxStreak) s.maxStreak = s.streak;
+        s.flashAlpha = 0.15; s.flashColor = '#00ff00';
+        s.floats.push({ x: canvas.width/2, y: canvas.height/2 - 40, text: '+' + (100 + (s.streak-1)*25), color: '#4ade80', life: 40, vy: -2 });
+        spawnBurstParticles(s.particles, canvas.width/2, canvas.height/2, '#e91e63', 15);
+      } else {
+        s.streak = 0;
+        s.flashAlpha = 0.15; s.flashColor = '#ff0000';
+      }
+      s.driversRated++;
+      if (s.driversRated >= s.totalDrivers) {
+        s.gameOver = true;
+        spawnBurstParticles(s.particles, canvas.width/2, canvas.height/2, '#e91e63', 40);
+      }
+    },
+    onSpace() {
+      const s = mgState;
+      if (s.gameOver) return;
+      if (s.answered) {
+        s.answered = false;
+        s.selectedAnswer = -1;
+        s.driver = miniGameHandlers.riskRater._genDriver();
+      }
+    }
   }
 };
 
