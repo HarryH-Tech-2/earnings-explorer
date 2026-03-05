@@ -468,7 +468,7 @@ window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 (function() {
   // Only show touch controls on actual mobile/tablet devices (coarse pointer = touch primary input)
   // This avoids showing on Windows laptops with touchscreens where mouse is primary
-  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches && ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 1024;
   if (!isTouchDevice) return;
   document.body.classList.add('touch-device');
 
