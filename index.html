@@ -3050,14 +3050,6 @@ function drawMinimap() {
     mmCtx.fill();
   }
 
-  // Viewport
-  mmCtx.strokeStyle = 'rgba(255,255,255,0.3)';
-  mmCtx.lineWidth = 1;
-  mmCtx.strokeRect(
-    camera.x * scaleX, camera.y * scaleY,
-    canvas.width * scaleX, canvas.height * scaleY
-  );
-
   // Player
   mmCtx.fillStyle = '#fff';
   mmCtx.beginPath();
